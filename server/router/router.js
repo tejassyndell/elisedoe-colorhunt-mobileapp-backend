@@ -4,7 +4,9 @@ const Routes = express.Router()
 const {
   getAllArticles,
   getCategories,
-  getParty
+  getParty,
+  AddWishlist,
+  getWishlist
 } = require('../controller/controllerM2.js')
 
 
@@ -16,7 +18,8 @@ const {
 Routes.get('/getAllArticles',getAllArticles);
 Routes.get('/getCategories', getCategories);
 Routes.get('/getParty', getParty);
-
+Routes.post('/addwishlist', AddWishlist)
+Routes.post('/getWishlist',getWishlist)
 
 // //---------------------new change 28-----------------------
 

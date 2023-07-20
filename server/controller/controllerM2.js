@@ -29,7 +29,6 @@ exports.getCategories = (req, res) => {
         .status(500)
         .json({ error: "Failed to retrieve data from the database" });
     } else {
-      console.log(results);
       res.status(200).json(results);
     }
   });
@@ -44,8 +43,35 @@ exports.getParty = (req, res) => {
         .status(500)
         .json({ error: "Failed to retrieve data from the database" });
     } else {
-      console.log(results);
       res.status(200).json(results);
     }
   });
-}
+};
+//Add to wishlist post api
+exports.AddWishlist = (req, res) => {
+  const { user_id, article_id } = req.body;
+  const query = `INSERT INTO wishlist ( party_id,article_id) VALUES ( ${user_id}, ${article_id} )`;
+
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error("Error executing query:", error);
+      res.status(500).json({ error: "Failed to create data in database" });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+};
+//get wishlist api
+exports.getWishlist = (req, res) => {
+  const { party_id } = req.body;
+  const query = `SELECT a.ArticleNumber, r.ArticleRate, c.Title, p.Name as article_photos FROM wishlist wl INNER JOIN article a ON wl.article_id = a.Id INNER JOIN articlerate r ON a.Id = r.ArticleId left JOIN articlephotos p ON a.Id = p.ArticlesId INNER JOIN category c ON a.CategoryId = c.Id WHERE wl.party_id = ${party_id}`;
+
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error("Error executing query:", error);
+      res.status(500).json({ error: "Failed to get data from database table" });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+};
