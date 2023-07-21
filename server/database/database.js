@@ -6,9 +6,8 @@ const mysql = require('mysql')
 const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  database: 'colorvm3_webservicee',
+  database: 'colorvm3_webservice',
   password : '',
-  port : '3307'
 })
     
 

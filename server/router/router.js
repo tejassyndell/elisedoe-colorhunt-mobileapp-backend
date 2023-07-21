@@ -2,9 +2,9 @@
 const express = require('express')
 const Routes = express.Router()
 const {
-  grlAllArticles,
+  gatAllArticles,
   getCategories,
-  grlAllArticlesscroll,
+  gatAllArticlesscroll,
   getWishlist,
   AddWishlist,
 } = require('../controller/controllerM2.js')
@@ -15,9 +15,9 @@ const {
 // grlAllArticles
 // //for dashboard
 // //---------------------new change 28-----------------------
-Routes.get('/gelAllArticles', grlAllArticles);
+Routes.get('/gatAllArticles', gatAllArticles);
 Routes.get('/getCategories', getCategories);
-Routes.get('/gelAllArticlesscroll', grlAllArticlesscroll);
+Routes.get('/gatAllArticlesscroll', gatAllArticlesscroll);
 Routes.post('/getWishlist', getWishlist);
 Routes.post('/AddWishlist', AddWishlist);
 
