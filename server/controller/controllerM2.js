@@ -35,7 +35,7 @@
 //     }
 //   });
 // };
-exports.grlAllArticles = async (req, res) => {
+exports.gatAllArticles = async (req, res) => {
   const page = req.query.page ? parseInt(req.query.page) : 1;
   const limit = 100; // Set the number of records to return per page
 
@@ -116,7 +116,7 @@ exports.getWishlist = (req, res) => {
   });
 };
 
-  exports.grlAllArticlesscroll = (req,res) =>{
+  exports.gatAllArticlesscroll = (req,res) =>{
     // API endpoint for infinite scrolling
 
   const page = req.query.page ? parseInt(req.query.page) : 1;
