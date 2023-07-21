@@ -1,8 +1,8 @@
 /* eslint-disable */
-const axios = require("axios");
-const { promisify } = require("util");
-const uid = 26;
+
 const connection = require("../database/database.js");
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
 
 //Full Article data
 exports.getAllArticles = async (req, res) => {
@@ -75,3 +75,48 @@ exports.getWishlist = (req, res) => {
     }
   });
 };
+//delete wishlist api
+exports.deletewishlist = (req, res) => {
+  const party_id = req.body;
+  const article_id = req.body;
+  const query = `DELETE ${article_id} from wishlist where party_id = ${party_id}`
+   connection.query(query, (error, results) => {
+     if (error) {
+       console.error("Error executing query:", error);
+       res
+         .status(500)
+         .json({ error: "Failed to get data from database table" });
+     } else {
+       res.status(200).json(results);
+     }
+   });
+}
+
+
+
+
+//upload image api
+exports.uploadimage = (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded.' });
+  }
+
+  // Read the image file
+  const imageFile = req.file;
+
+  // Prepare the data to be inserted into the database
+  const imageData = {
+    filename: imageFile.originalname,
+    mimetype: imageFile.mimetype,
+    data: imageFile.buffer,
+  };
+  const query = "UPDATE party SET profile_img =? WHERE Id = 197"
+  connection.query(query, [imageData.data], (err, results) => {
+    if (err) {
+      console.log("error saving image to dtabase:", err);
+      return res.status(500).json({message:'Error Saving image'})
+    }
+    console.log("Image Saved Successfully");
+    return res.status(200).json({ message: 'Image Saved Successfully' });
+  })
+}
