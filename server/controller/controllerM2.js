@@ -75,6 +75,7 @@ exports.getWishlist = (req, res) => {
     }
   });
 };
+//ff
 //delete wishlist api
 exports.deletewishlist = (req, res) => {
   const party_id = req.body.party_id;
