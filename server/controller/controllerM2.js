@@ -75,11 +75,12 @@ exports.getWishlist = (req, res) => {
     }
   });
 };
+//ff
 //delete wishlist api
 exports.deletewishlist = (req, res) => {
-  const party_id = req.body;
-  const article_id = req.body;
-  const query = `DELETE ${article_id} from wishlist where party_id = ${party_id}`
+  const {party_id, article_id} = req.body;
+
+  const query = `DELETE from wishlist where party_id = ${party_id} and article_id = ${article_id}`
    connection.query(query, (error, results) => {
      if (error) {
        console.error("Error executing query:", error);

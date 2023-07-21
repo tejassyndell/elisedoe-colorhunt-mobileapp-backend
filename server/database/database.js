@@ -8,6 +8,7 @@ const connection = mysql.createConnection({
   user: "root",
   database: "colorvm3_webservice",
   password: "",
+  port : "3307"
 });
 
 // const connection = mysql.createConnection({
