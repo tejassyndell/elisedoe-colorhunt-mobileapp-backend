@@ -6,7 +6,7 @@ const mysql = require("mysql");
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
-  database: "colorvm3_stagingwebservice",
+  database: "colorvm3_webservice",
   password: "",
 });
 
