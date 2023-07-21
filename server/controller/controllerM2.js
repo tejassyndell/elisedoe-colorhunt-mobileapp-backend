@@ -85,7 +85,7 @@ exports.deletewishlist = (req, res) => {
    connection.query(query, (error, results) => {
      if (error) {
        console.error("Error executing query:", error);
-       res
+       res  
          .status(500)
          .json({ error: "Failed to get data from database table" });
      } else {
@@ -98,11 +98,43 @@ exports.deletewishlist = (req, res) => {
 
 
 //upload image api
-exports.uploadimage = (req, res) => {
-  upload.single('file') = (req, res) => {
+// exports.uploadimage = (req, res) => {
+//   upload.single('file')(req, res) => {
+   
     
-  }
-}
+//     const { originalname, path } = req.file;
+//     const query = "INSERT INTO party(profile_img) VALUES (?) WHERE Id = 197" 
+//     connection.query(query, [path], (error, results) => {
+//        if (error) {
+//         console.log("Error executing query:", error);
+//         return res.status(500).json({ error: "Internal server error" });
+//       }
+//       else {
+//         res.status(200).json({message:"File uploaded SuccessFully"})
+//       }
+//     })
+//   }
+// }
+exports.uploadimage = (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      console.error("Error uploading file:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    const { originalname, path } = req.file;
+    const query = "INSERT INTO party(profile_img) VALUES (?) WHERE Id = 197";
+
+    connection.query(query, [path], (error, results) => {
+      if (error) {
+        console.log("Error executing query:", error);
+        return res.status(500).json({ error: "Internal server error" });
+      } else {
+        res.status(200).json({ message: "File uploaded successfully" });
+      }
+    });
+  });
+};
 
 
 
