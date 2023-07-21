@@ -75,6 +75,25 @@ exports.getWishlist = (req, res) => {
     }
   });
 };
+//delete wishlist api
+exports.deletewishlist = (req, res) => {
+  const party_id = req.body;
+  const article_id = req.body;
+  const query = `DELETE ${article_id} from wishlist where party_id = ${party_id}`
+   connection.query(query, (error, results) => {
+     if (error) {
+       console.error("Error executing query:", error);
+       res
+         .status(500)
+         .json({ error: "Failed to get data from database table" });
+     } else {
+       res.status(200).json(results);
+     }
+   });
+}
+
+
+
 
 //upload image api
 exports.uploadimage = (req, res) => {
