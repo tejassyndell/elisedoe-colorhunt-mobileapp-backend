@@ -6,7 +6,8 @@ const {
   getCategories,
   getParty,
   AddWishlist,
-  getWishlist
+  getWishlist,
+  uploadimage
 } = require('../controller/controllerM2.js')
 
 
@@ -19,7 +20,9 @@ Routes.get('/getAllArticles',getAllArticles);
 Routes.get('/getCategories', getCategories);
 Routes.get('/getParty', getParty);
 Routes.post('/addwishlist', AddWishlist)
-Routes.post('/getWishlist',getWishlist)
+Routes.post('/getWishlist', getWishlist)
+Routes.post('/uploadimage',uploadimage)
+
 
 // //---------------------new change 28-----------------------
 
