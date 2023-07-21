@@ -77,9 +77,10 @@ exports.getWishlist = (req, res) => {
 };
 //delete wishlist api
 exports.deletewishlist = (req, res) => {
-  const party_id = req.body;
-  const article_id = req.body;
-  const query = `DELETE ${article_id} from wishlist where party_id = ${party_id}`
+  const party_id = req.body.party_id;
+  const article_id = req.body.article_id;
+  const query = `DELETE FROM wishlist WHERE party_id = ${party_id} AND article_id = ${article_id}`
+
    connection.query(query, (error, results) => {
      if (error) {
        console.error("Error executing query:", error);
@@ -97,26 +98,34 @@ exports.deletewishlist = (req, res) => {
 
 //upload image api
 exports.uploadimage = (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: 'No file uploaded.' });
+  upload.single('file') = (req, res) => {
+    
   }
-
-  // Read the image file
-  const imageFile = req.file;
-
-  // Prepare the data to be inserted into the database
-  const imageData = {
-    filename: imageFile.originalname,
-    mimetype: imageFile.mimetype,
-    data: imageFile.buffer,
-  };
-  const query = "UPDATE party SET profile_img =? WHERE Id = 197"
-  connection.query(query, [imageData.data], (err, results) => {
-    if (err) {
-      console.log("error saving image to dtabase:", err);
-      return res.status(500).json({message:'Error Saving image'})
-    }
-    console.log("Image Saved Successfully");
-    return res.status(200).json({ message: 'Image Saved Successfully' });
-  })
 }
+
+
+
+// exports.uploadimage = (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).json({ message: 'No file uploaded.' });
+//   }
+
+//   // Read the image file
+//   const imageFile = req.file;
+
+//   // Prepare the data to be inserted into the database
+//   const imageData = {
+//     filename: imageFile.originalname,
+//     mimetype: imageFile.mimetype,
+//     data: imageFile.buffer,
+//   };
+//   const query = "UPDATE party SET profile_img =? WHERE Id = 197"
+//   connection.query(query, [imageData.data], (err, results) => {
+//     if (err) {
+//       console.log("error saving image to dtabase:", err);
+//       return res.status(500).json({message:'Error Saving image'})
+//     }
+//     console.log("Image Saved Successfully");
+//     return res.status(200).json({ message: 'Image Saved Successfully' });
+//   })
+// }
