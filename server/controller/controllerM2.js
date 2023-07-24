@@ -2,7 +2,7 @@
 
 const connection = require("../database/database.js");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+
 
 //Full Article data
 exports.getAllArticles = async (req, res) => {
@@ -94,47 +94,40 @@ exports.deletewishlist = (req, res) => {
    });
 }
 
+const storage = multer.diskStorage({
+  destination:function(req,file,cb){
+    cb(null,'uploads/');
+  },
+  filename:function(req,file,cb){
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random()*1E9);
+    cb(null,file.filename + '-' + uniqueSuffix)
+  }
+})
+const upload = multer({storage:storage,limits:{fileSize:10*1024*1024}});
 
+exports.uploadimage = (req,res)  =>{
+  upload.single('image')(req,res,(err) =>{
+    console.log("request file:",req.file)
+    const image = req.file.path;
 
-
-//upload image api
-// exports.uploadimage = (req, res) => {
-//   upload.single('file')(req, res) => {
-   
     
-//     const { originalname, path } = req.file;
-//     const query = "INSERT INTO party(profile_img) VALUES (?) WHERE Id = 197" 
-//     connection.query(query, [path], (error, results) => {
-//        if (error) {
-//         console.log("Error executing query:", error);
-//         return res.status(500).json({ error: "Internal server error" });
-//       }
-//       else {
-//         res.status(200).json({message:"File uploaded SuccessFully"})
-//       }
-//     })
-//   }
-// }
-exports.uploadimage = (req, res) => {
-  upload.single('file')(req, res, (err) => {
-    if (err) {
-      console.error("Error uploading file:", err);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-
-    const { originalname, path } = req.file;
-    const query = "INSERT INTO party(profile_img) VALUES (?) WHERE Id = 197";
-
-    connection.query(query, [path], (error, results) => {
-      if (error) {
-        console.log("Error executing query:", error);
-        return res.status(500).json({ error: "Internal server error" });
-      } else {
-        res.status(200).json({ message: "File uploaded successfully" });
+    const query = 'UPDATE party SET profile_img = ? WHERE Id = 197';
+    connection.query(query,[image],(error,results)=>{
+      if(error){
+        console.log("Error saving image to the database",error)
+        return res.status(500).json({error :"Failed to save image"})
       }
-    });
-  });
-};
+      res.status(200).json({message:"Image uploaded successfully"});
+    })
+  }
+)}
+
+// exports.uploadimage = (req, res) => {
+//   upload.single('file')(req, res, (err) => {
+
+//     const query = "INSERT INTO party(profile_img) VALUES (?) WHERE Id = 197";
+
+
 
 
 
