@@ -1,5 +1,8 @@
 /* eslint-disable */
 const mysql = require("mysql");
+const express = require('express')
+
+
 
 //for local connections
 
@@ -9,13 +12,6 @@ const connection = mysql.createConnection({
   database: "colorvm3_webservice",
   password: "",
 });
-
-// const connection = mysql.createConnection({
-//   host: 'localhost',
-//   user: 'sincpr5_sincpr5',
-//   database: 'sincpr5_webfleet',
-//   password: 'wr5Xb9857wgq44SdLnkR!'
-// })
 
 connection.connect((err) => {
   if (err) {

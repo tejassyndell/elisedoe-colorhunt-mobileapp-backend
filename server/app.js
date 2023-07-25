@@ -12,6 +12,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cors())
 
 app.use('/', Routes)
+app.use("/uploads",express.static("./uploads"))
 
 app.get("/", (req, res) => {
   res.send('<div style="display: flex; justify-content: center; align-items: center; height: 100vh;"><div style="text-align:center; font-size: 40px; font-weight: 500; font-family: Arial;">Colorhunt mobile app Backend</div></div>');
