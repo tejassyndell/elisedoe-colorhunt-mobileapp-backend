@@ -1,13 +1,9 @@
 /* eslint-disable */
 const mysql = require("mysql");
 const express = require('express')
-const app = express();
-const bodyParser = require('body-parser');
 
-const cors = require('cors')
-app.use(cors());
-app.use(bodyParser.json({ limit: '10mb' }));
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+
+
 //for local connections
 
 const connection = mysql.createConnection({

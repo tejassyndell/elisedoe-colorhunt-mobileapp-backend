@@ -2,7 +2,28 @@
 
 const connection = require("../database/database.js");
 const multer = require("multer");
+const Routes = require("../router/router.js");
+const moment = require("moment");
 
+const imgconfig = multer.diskStorage({
+  destination: (req, file, callback) => {
+    callback(null, "./uploads");
+  },
+  filename: (req, file, callback) => {
+    callback(null, `image-${Date.now()}.${file.originalname}`);
+  },
+});
+const imgfilter = (req, file, callback) => {
+  if (file.mimetype.startsWith("image")) {
+    callback(null, true);
+  } else {
+    callback(null, error("Only Image is allowed"));
+  }
+};
+const upload = multer({
+  storage: imgconfig,
+  fileFilter: imgfilter,
+});
 
 //Full Article data
 exports.getAllArticles = async (req, res) => {
@@ -64,7 +85,7 @@ exports.AddWishlist = (req, res) => {
 //get wishlist api
 exports.getWishlist = (req, res) => {
   const { party_id } = req.body;
-  const query = `SELECT a.id, a.ArticleNumber, r.ArticleRate, c.Title, p.Name as article_photos FROM wishlist wl INNER JOIN article a ON wl.article_id = a.Id INNER JOIN articlerate r ON a.Id = r.ArticleId left JOIN articlephotos p ON a.Id = p.ArticlesId INNER JOIN category c ON a.CategoryId = c.Id WHERE wl.party_id = ${party_id} GROUP BY a.id`;  ;
+  const query = `SELECT a.id, a.ArticleNumber, r.ArticleRate, c.Title, p.Name as article_photos FROM wishlist wl INNER JOIN article a ON wl.article_id = a.Id INNER JOIN articlerate r ON a.Id = r.ArticleId left JOIN articlephotos p ON a.Id = p.ArticlesId INNER JOIN category c ON a.CategoryId = c.Id WHERE wl.party_id = ${party_id} GROUP BY a.id`;
 
   connection.query(query, (error, results) => {
     if (error) {
@@ -75,83 +96,87 @@ exports.getWishlist = (req, res) => {
     }
   });
 };
-//ff
 //delete wishlist api
 exports.deletewishlist = (req, res) => {
   const party_id = req.body.party_id;
   const article_id = req.body.article_id;
-  const query = `DELETE FROM wishlist WHERE party_id = ${party_id} AND article_id = ${article_id}`
+  const query = `DELETE FROM wishlist WHERE party_id = ${party_id} AND article_id = ${article_id}`;
 
-   connection.query(query, (error, results) => {
-     if (error) {
-       console.error("Error executing query:", error);
-       res  
-         .status(500)
-         .json({ error: "Failed to get data from database table" });
-     } else {
-       res.status(200).json(results);
-     }
-   });
-}
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error("Error executing query:", error);
+      res.status(500).json({ error: "Failed to get data from database table" });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+};
+//article Details
+exports.articledetails = (req, res) => {
+  const article_id = req.body.article_id;
+  const query = `SELECT
+  a.StyleDescription,
+  a.ArticleNumber,
+  a.ArticleColor,
+  a.ArticleSize,
+  a.OpeningStock,
+  GROUP_CONCAT(ap.Name) AS photos,
+  ar.ArticleRate,
+  c.Title AS Category
+FROM article a
+LEFT JOIN articlephotos ap ON a.Id = ap.ArticlesId
+LEFT JOIN articlerate ar ON a.Id = ar.ArticleId
+LEFT JOIN category c ON a.CategoryId = c.Id
+WHERE ${article_id}
+GROUP BY
+  a.StyleDescription,
+  a.ArticleNumber,
+  a.ArticleColor,
+  a.ArticleSize,
+  a.OpeningStock,
+  ar.ArticleRate,
+  c.Title;`;
 
-const storage = multer.diskStorage({
-  destination:function(req,file,cb){
-    cb(null,'uploads/');
-  },
-  filename:function(req,file,cb){
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random()*1E9);
-    cb(null,file.filename + '-' + uniqueSuffix)
-  }
-})
-const upload = multer({storage:storage,limits:{fileSize:10*1024*1024}});
-
-exports.uploadimage = (req,res)  =>{
-  upload.single('image')(req,res,(err) =>{
-    console.log("request file:",req.file)
-    const image = req.file.path;
-
-    
-    const query = 'UPDATE party SET profile_img = ? WHERE Id = 197';
-    connection.query(query,[image],(error,results)=>{
-      if(error){
-        console.log("Error saving image to the database",error)
-        return res.status(500).json({error :"Failed to save image"})
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error("Error executing query:", error);
+      res.status(500).json({ error: "Failed to get data from database table" });
+    } else {
+      // Check if results array is not empty
+      if (results.length === 0) {
+        res.status(404).json({ error: "Article not found" });
+      } else {
+        const formattedResult = {
+          ...results[0],
+          photos: results[0].photos ? results[0].photos.split(",") : [],
+        };
+        res.json(formattedResult);
       }
-      res.status(200).json({message:"Image uploaded successfully"});
-    })
-  }
-)}
-
-// exports.uploadimage = (req, res) => {
-//   upload.single('file')(req, res, (err) => {
-
-//     const query = "INSERT INTO party(profile_img) VALUES (?) WHERE Id = 197";
-
-
-
-
-
-// exports.uploadimage = (req, res) => {
-//   if (!req.file) {
-//     return res.status(400).json({ message: 'No file uploaded.' });
-//   }
-
-//   // Read the image file
-//   const imageFile = req.file;
-
-//   // Prepare the data to be inserted into the database
-//   const imageData = {
-//     filename: imageFile.originalname,
-//     mimetype: imageFile.mimetype,
-//     data: imageFile.buffer,
-//   };
-//   const query = "UPDATE party SET profile_img =? WHERE Id = 197"
-//   connection.query(query, [imageData.data], (err, results) => {
-//     if (err) {
-//       console.log("error saving image to dtabase:", err);
-//       return res.status(500).json({message:'Error Saving image'})
-//     }
-//     console.log("Image Saved Successfully");
-//     return res.status(200).json({ message: 'Image Saved Successfully' });
-//   })
-// }
+    }
+  });
+};
+//upload pic profile
+exports.uploadimage = (req, res) => {
+  upload.single("image")(req, res, (err) => {
+    const filename = `'` + req.file.filename + `'`;
+    console.log(filename);
+    if (!filename) {
+      res.status(422).json({ status: 422, message: "No image" });
+    }
+    try {
+      connection.query(
+        `UPDATE party SET profile_img = ${filename} WHERE Id = 197`
+      ),
+        (err, result) => {
+          if (err) {
+            console.log(err);
+          } else {
+            console.log("Image added");
+            res.status(201).json({ status: 201, data: req.body });
+          }
+        };
+    } catch (error) {
+      res.status(422).json({ status: 422, error });
+    }
+  });
+};
