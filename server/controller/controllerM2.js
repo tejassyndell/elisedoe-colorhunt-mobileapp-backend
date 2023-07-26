@@ -127,15 +127,8 @@ FROM article a
 LEFT JOIN articlephotos ap ON a.Id = ap.ArticlesId
 LEFT JOIN articlerate ar ON a.Id = ar.ArticleId
 LEFT JOIN category c ON a.CategoryId = c.Id
-WHERE ${article_id}
-GROUP BY
-  a.StyleDescription,
-  a.ArticleNumber,
-  a.ArticleColor,
-  a.ArticleSize,
-  a.OpeningStock,
-  ar.ArticleRate,
-  c.Title;`;
+WHERE a.Id = ${article_id};`
+
 
   connection.query(query, (error, results) => {
     if (error) {
