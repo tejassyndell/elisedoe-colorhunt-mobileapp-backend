@@ -152,12 +152,11 @@ exports.uploadimage = (req, res) => {
     }
   });
 };
-
 //article Details
 exports.articledetails = async (req, res) => {
   try {
-    const ArticleId = "100"; // Set the ArticleId here
-    const PartyId = "812"; // Set the PartyId here
+
+  const  {ArticleId,PartyId} = req.query;
 
     async function calculateArticleData(ArticleId, PartyId) {
       try {
