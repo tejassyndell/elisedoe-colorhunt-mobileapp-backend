@@ -6,6 +6,7 @@ const app = express()
 const Routes = require('./router/router')
 //const connection = require('./database/database')
 
+
 app.use(express.json())
 app.use(bodyParser.json({ extended: true }))
 app.use(bodyParser.urlencoded({ extended: true }))
