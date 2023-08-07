@@ -1,5 +1,6 @@
 /* eslint-disable */
 
+const { json } = require("body-parser");
 const connection = require("../database/database.js");
 const multer = require("multer");
 
@@ -152,11 +153,11 @@ exports.uploadimage = (req, res) => {
     }
   });
 };
+
 //article Details
 exports.articledetails = async (req, res) => {
   try {
-
-  const  {ArticleId,PartyId} = req.query;
+    const { ArticleId, PartyId } = req.query;
 
     async function calculateArticleData(ArticleId, PartyId) {
       try {
@@ -299,15 +300,15 @@ exports.articledetails = async (req, res) => {
 };
 
 //issue vadi order api
-exports.orderdetails = (req,res) => {
+exports.orderdetails = (req, res) => {
   async function createOrUpdateSO(request) {
     const data = request.body;
-  
+
     if (data.SoNumberId === "Add") {
       const generate_SONUMBER = GenerateSoNumber(data.UserId);
       const SO_Number = generate_SONUMBER.SO_Number;
       const SO_Number_Financial_Id = generate_SONUMBER.SO_Number_Financial_Id;
-  
+
       const SoNumberId = await insertSonumber({
         SoNumber: SO_Number,
         FinancialYearId: SO_Number_Financial_Id,
@@ -322,26 +323,26 @@ exports.orderdetails = (req,res) => {
         GSTType: data.GSTType,
         CreatedDate: new Date().toISOString(),
       });
-  
+
       const userName = await Users.findOne({ where: { Id: data.UserId } });
       const sodRec = await querySONumberWithFinancialYear(SoNumberId);
       await UserLogs.create({
-        Module: 'SO',
+        Module: "SO",
         ModuleNumberId: SoNumberId,
-        LogType: 'Created',
+        LogType: "Created",
         LogDescription: `${userName.Name} created so with SO Number ${sodRec.SONumber}`,
         UserId: userName.Id,
-        updated_at: null
+        updated_at: null,
       });
-  
+
       const artRecor = await Article.findOne({ where: { Id: data.ArticleId } });
       await UserLogs.create({
-        Module: 'SO',
+        Module: "SO",
         ModuleNumberId: SoNumberId,
-        LogType: 'Updated',
+        LogType: "Updated",
         LogDescription: `${userName.Name} added article ${artRecor.ArticleNumber} in so with SO Number ${sodRec.SONumber}`,
         UserId: userName.Id,
-        updated_at: null
+        updated_at: null,
       });
     } else {
       const checksonumber = await getSonumberById(data.SoNumberId);
@@ -358,21 +359,23 @@ exports.orderdetails = (req,res) => {
           GSTPercentage: data.GST_Percentage,
           GSTType: data.GSTType,
         });
-  
+
         const userName = await Users.findOne({ where: { Id: data.UserId } });
         const sodRec = await querySONumberWithFinancialYear(data.SoNumberId);
-        const artRecor = await Article.findOne({ where: { Id: data.ArticleId } });
+        const artRecor = await Article.findOne({
+          where: { Id: data.ArticleId },
+        });
         await UserLogs.create({
-          Module: 'SO',
+          Module: "SO",
           ModuleNumberId: data.SoNumberId,
-          LogType: 'Updated',
+          LogType: "Updated",
           LogDescription: `${userName.Name} added article ${artRecor.ArticleNumber} in so with SO Number ${sodRec.SONumber}`,
           UserId: userName.Id,
-          updated_at: null
+          updated_at: null,
         });
       }
     }
-  
+
     let ArticleRate;
     if (data.ArticleRate !== undefined) {
       ArticleRate = data.ArticleRate;
@@ -380,7 +383,7 @@ exports.orderdetails = (req,res) => {
       const artratedata = await queryArticleRateByArticleId(data.ArticleId);
       const partyrec = await queryPartyById(data.PartyId);
       const partyuser = await Users.findOne({ where: { Id: partyrec.UserId } });
-  
+
       if (partyuser) {
         if (partyuser.PartyId !== 0) {
           const outpartyrec = await queryPartyById(partyuser.PartyId);
@@ -392,7 +395,7 @@ exports.orderdetails = (req,res) => {
         ArticleRate = artratedata.ArticleRate;
       }
     }
-  
+
     if (data.ArticleOpenFlag === 1) {
       const mixnopacks = await queryMixnopacksByArticleId(data.ArticleId);
       let NoPacks = "";
@@ -409,19 +412,28 @@ exports.orderdetails = (req,res) => {
       } else {
         return { id: "", ZeroNotAllow: "true" };
       }
-  
-      const sonumberdata = await querySoBySoNumberIdAndArticleId(data.SoNumberId, data.ArticleId);
+
+      const sonumberdata = await querySoBySoNumberIdAndArticleId(
+        data.SoNumberId,
+        data.ArticleId
+      );
       const getnppacks = sonumberdata.NoPacks;
-      await updateMixnopacksByArticleId(data.ArticleId, { NoPacks: SalesNoPacks });
-  
+      await updateMixnopacksByArticleId(data.ArticleId, {
+        NoPacks: SalesNoPacks,
+      });
+
       if (sonumberdata.total > 0) {
         const nopacksadded = getnppacks + NoPacks;
-  
-        await updateSoBySoNumberIdAndArticleId(data.SoNumberId, data.ArticleId, {
-          NoPacks: nopacksadded,
-          OutwardNoPacks: nopacksadded,
-          ArticleRate: ArticleRate,
-        });
+
+        await updateSoBySoNumberIdAndArticleId(
+          data.SoNumberId,
+          data.ArticleId,
+          {
+            NoPacks: nopacksadded,
+            OutwardNoPacks: nopacksadded,
+            ArticleRate: ArticleRate,
+          }
+        );
       } else {
         const soadd = {
           SoNumberId: data.SoNumberId,
@@ -432,7 +444,7 @@ exports.orderdetails = (req,res) => {
         };
         await SO.create(soadd);
       }
-  
+
       return { SoNumberId: data.SoNumberId, SO_Number: data.SO_Number };
     } else {
       const soadd = {};
@@ -443,11 +455,11 @@ exports.orderdetails = (req,res) => {
       let stringcomma = 0;
       let NoPacks = "";
       let SalesNoPacks = "";
-  
-      if (search.includes(',')) {
-        const string = search.split(',');
+
+      if (search.includes(",")) {
+        const string = search.split(",");
         stringcomma = 1;
-  
+
         if (Colorflag === 1) {
           for (const [key, vl] of data.ArticleSelectedColor.entries()) {
             const numberofpacks = vl.Id;
@@ -456,12 +468,16 @@ exports.orderdetails = (req,res) => {
                 if (string[key] < data[`NoPacksNew_${numberofpacks}`]) {
                   return { id: "", NoOfSetNotMatch: "true" };
                 }
-                SalesNoPacks += `${string[key] - data[`NoPacksNew_${numberofpacks}`]},`;
+                SalesNoPacks += `${
+                  string[key] - data[`NoPacksNew_${numberofpacks}`]
+                },`;
               } else {
                 if (search < data[`NoPacksNew_${numberofpacks}`]) {
                   return { id: "", NoOfSetNotMatch: "true" };
                 }
-                SalesNoPacks += `${search - data[`NoPacksNew_${numberofpacks}`]},`;
+                SalesNoPacks += `${
+                  search - data[`NoPacksNew_${numberofpacks}`]
+                },`;
               }
               NoPacks += `${data[`NoPacksNew_${numberofpacks}`]},`;
             } else {
@@ -481,25 +497,30 @@ exports.orderdetails = (req,res) => {
           }
         }
       }
-  
+
       NoPacks = NoPacks.slice(0, -1);
       SalesNoPacks = SalesNoPacks.slice(0, -1);
-  
-      const CheckSalesNoPacks = NoPacks.split(',');
+
+      const CheckSalesNoPacks = NoPacks.split(",");
       const tmp = CheckSalesNoPacks.filter((item) => item !== "");
       if (tmp.length === 0) {
         return { id: "", ZeroNotAllow: "true" };
       }
-  
-      const sonumberdata = await querySoBySoNumberIdAndArticleId(data.SoNumberId, data.ArticleId);
+
+      const sonumberdata = await querySoBySoNumberIdAndArticleId(
+        data.SoNumberId,
+        data.ArticleId
+      );
       const getnppacks = sonumberdata.NoPacks;
-      await updateInwardByArticleId(data.ArticleId, { SalesNoPacks: SalesNoPacks });
-  
+      await updateInwardByArticleId(data.ArticleId, {
+        SalesNoPacks: SalesNoPacks,
+      });
+
       if (sonumberdata.total > 0) {
         let nopacksadded = "";
-        if (NoPacks.includes(',')) {
-          const NoPacks1 = NoPacks.split(',');
-          const getnppacks = getnppacks.split(',');
+        if (NoPacks.includes(",")) {
+          const NoPacks1 = NoPacks.split(",");
+          const getnppacks = getnppacks.split(",");
           for (const [key, vl] of getnppacks.entries()) {
             nopacksadded += `${parseInt(NoPacks1[key]) + parseInt(vl)},`;
           }
@@ -507,12 +528,16 @@ exports.orderdetails = (req,res) => {
           nopacksadded += `${getnppacks + NoPacks},`;
         }
         nopacksadded = nopacksadded.slice(0, -1);
-  
-        await updateSoBySoNumberIdAndArticleId(data.SoNumberId, data.ArticleId, {
-          NoPacks: nopacksadded,
-          OutwardNoPacks: nopacksadded,
-          ArticleRate: ArticleRate,
-        });
+
+        await updateSoBySoNumberIdAndArticleId(
+          data.SoNumberId,
+          data.ArticleId,
+          {
+            NoPacks: nopacksadded,
+            OutwardNoPacks: nopacksadded,
+            ArticleRate: ArticleRate,
+          }
+        );
       } else {
         const soadd = {
           SoNumberId: data.SoNumberId,
@@ -523,81 +548,99 @@ exports.orderdetails = (req,res) => {
         };
         await SO.create(soadd);
       }
-  
+
       return { SoNumberId: data.SoNumberId, SO_Number: data.SO_Number };
     }
   }
-  
+
   // Helper functions for database queries
   async function querySONumberWithFinancialYear(SoNumberId) {
     // Your database query logic here to fetch the SO Number with Financial Year based on SoNumberId
     // Return an object with 'SONumber' and 'FinancialYear' properties
   }
-  
+
   async function queryArticleRateByArticleId(ArticleId) {
     // Your database query logic here to fetch the ArticleRate based on ArticleId
     // Return the ArticleRate value
   }
-  
+
   async function queryPartyById(PartyId) {
     // Your database query logic here to fetch the party data based on PartyId
     // Return the party data
   }
-  
+
   async function queryMixnopacksByArticleId(ArticleId) {
     // Your database query logic here to fetch the mixnopacks data based on ArticleId
     // Return the mixnopacks data
   }
-  
+
   async function querySoBySoNumberIdAndArticleId(SoNumberId, ArticleId) {
     // Your database query logic here to fetch the SO data based on SoNumberId and ArticleId
     // Return the SO data
   }
-  
+
   async function queryColorFlagByArticleId(ArticleId) {
     // Your database query logic here to fetch the Colorflag based on ArticleId
     // Return the Colorflag value
   }
-  
+
   async function querySalesNoPacksByArticleId(ArticleId) {
     // Your database query logic here to fetch the SalesNoPacks data based on ArticleId
     // Return the SalesNoPacks data
   }
-  
+
   async function updateMixnopacksByArticleId(ArticleId, data) {
     // Your database update logic here to update the mixnopacks data based on ArticleId
   }
-  
+
   async function updateSoBySoNumberIdAndArticleId(SoNumberId, ArticleId, data) {
     // Your database update logic here to update the SO data based on SoNumberId and ArticleId
   }
-  
+
   // Usage:
   const request = {
     body: {
       // Your input data goes here...
     },
   };
-  
+
   const result = createOrUpdateSO(request);
-}
+};
 
 //addtocart api
-exports.addtocart = (req,res) => {
+exports.addtocart = (req, res) => {
   const party_id = req.body.party_id;
-  const article_id = req.body.article_id
+  const article_id = req.body.article_id;
+  const Quantity = req.body.Quantity;
+  const serailqty = JSON.stringify(Quantity);
+  const values = [[party_id, article_id, serailqty]];
 
-  
+  const query = `INSERT INTO cart (party_id,article_id,Quantity) VALUES ?`;
 
+  connection.query(query, [values], (error, results) => {
+    if (error) {
+      console.log("Error Executing Query:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to get data from database table " });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+};
 
-  const query = `SELECT ArticleNumber, StyleDescription, Name as Photos FROM article a LEFT JOIN articlephotos ap ON a.Id = ap.ArticlesId WHERE a.Id = ${article_id}`
-
-  connection.query(query, (error,results)=>{
-    if(error){
-      console.log("Error Executing Query:",error);
-      res.status(500).json({error:"Failed to get data from database table "});
-    } else{
-      res.status(200).json(results)
+//getcartdetails api
+exports.cartdetails = (req, res) => {
+  const party_id = 197;
+  const query = `SELECT ArticleNumber, StyleDescription  , GROUP_CONCAT(Name) as  Photos, article_id, ar.articleRate FROM cart LEFT JOIN article a ON cart.article_id = a.Id LEFT JOIN articlephotos ap ON cart.article_id = ap.ArticlesId LEFT JOIN articlerate ar on cart.article_id = ar.ArticleId WHERE party_id = ${party_id} `;
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.log("Error Executing Query:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to get data from database table " });
+    } else {
+      res.status(200).json(results);
     }
   });
 };
