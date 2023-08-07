@@ -10,7 +10,8 @@ const {
   uploadimage,
   deletewishlist,
   articledetails,
-  orderdetails
+  orderdetails,
+  addtocart
 } = require('../controller/controllerM2.js')
 
 
@@ -28,7 +29,7 @@ Routes.post('/uploadimage', uploadimage)
 Routes.post('/deletewishlist',deletewishlist)
 Routes.post('/articledetails',articledetails)
 Routes.post('/orderdetails',orderdetails)
-
+Routes.post('/addtocart', addtocart)
 // //---------------------new change 28-----------------------
 
 

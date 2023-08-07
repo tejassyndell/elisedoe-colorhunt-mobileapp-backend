@@ -581,3 +581,23 @@ exports.orderdetails = (req,res) => {
   
   const result = createOrUpdateSO(request);
 }
+
+//addtocart api
+exports.addtocart = (req,res) => {
+  const party_id = req.body.party_id;
+  const article_id = req.body.article_id
+
+  
+
+
+  const query = `SELECT ArticleNumber, StyleDescription, Name as Photos FROM article a LEFT JOIN articlephotos ap ON a.Id = ap.ArticlesId WHERE a.Id = ${article_id}`
+
+  connection.query(query, (error,results)=>{
+    if(error){
+      console.log("Error Executing Query:",error);
+      res.status(500).json({error:"Failed to get data from database table "});
+    } else{
+      res.status(200).json(results)
+    }
+  });
+};
