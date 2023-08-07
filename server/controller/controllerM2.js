@@ -632,7 +632,7 @@ exports.addtocart = (req, res) => {
 //getcartdetails api
 exports.cartdetails = (req, res) => {
   const party_id = 197;
-  const query = `SELECT ArticleNumber, StyleDescription  , GROUP_CONCAT(Name) as  Photos, article_id, ar.articleRate FROM cart LEFT JOIN article a ON cart.article_id = a.Id LEFT JOIN articlephotos ap ON cart.article_id = ap.ArticlesId LEFT JOIN articlerate ar on cart.article_id = ar.ArticleId WHERE party_id = ${party_id} `;
+  const query = `SELECT ArticleNumber, StyleDescription, article_id, ar.articleRate, (SELECT ap.Name FROM articlephotos ap WHERE ap.ArticlesId = a.Id LIMIT 1) as Photos FROM cart INNER JOIN article a ON cart.article_id = a.Id INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id = ${party_id}`;
   connection.query(query, (error, results) => {
     if (error) {
       console.log("Error Executing Query:", error);
