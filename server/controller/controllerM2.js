@@ -612,10 +612,11 @@ exports.addtocart = (req, res) => {
   const party_id = req.body.party_id;
   const article_id = req.body.article_id;
   const Quantity = req.body.Quantity;
+  const rate = req.body.rate;
   const serailqty = JSON.stringify(Quantity);
-  const values = [[party_id, article_id, serailqty]];
+  const values = [[party_id, article_id, serailqty, rate]];
 
-  const query = `INSERT INTO cart (party_id,article_id,Quantity) VALUES ?`;
+  const query = `INSERT INTO cart (party_id,article_id,Quantity,rate) VALUES ?`;
 
   connection.query(query, [values], (error, results) => {
     if (error) {
@@ -632,7 +633,7 @@ exports.addtocart = (req, res) => {
 //getcartdetails api
 exports.cartdetails = (req, res) => {
   const party_id = 197;
-  const query = `SELECT ArticleNumber, StyleDescription, article_id, ar.articleRate, (SELECT ap.Name FROM articlephotos ap WHERE ap.ArticlesId = a.Id LIMIT 1) as Photos FROM cart INNER JOIN article a ON cart.article_id = a.Id INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id = ${party_id}`;
+  const query = `SELECT ArticleNumber, StyleDescription, article_id, ar.articleRate, rate, (SELECT ap.Name FROM articlephotos ap WHERE ap.ArticlesId = a.Id LIMIT 1) as Photos , Quantity FROM cart INNER JOIN article a ON cart.article_id = a.Id INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id = ${party_id}`;
   connection.query(query, (error, results) => {
     if (error) {
       console.log("Error Executing Query:", error);
