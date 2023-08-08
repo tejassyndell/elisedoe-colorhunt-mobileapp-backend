@@ -13,6 +13,7 @@ const {
   orderdetails,
   addtocart,
   cartdetails,
+  deletecartitem,
 } = require("../controller/controllerM2.js");
 
 //for login auth
@@ -30,6 +31,7 @@ Routes.post("/articledetails", articledetails);
 Routes.post("/orderdetails", orderdetails);
 Routes.post("/addtocart", addtocart);
 Routes.post("/cartdetails", cartdetails);
+Routes.post("/deletecartitem",deletecartitem)
 
 // //---------------------new change 28-----------------------
 

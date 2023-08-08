@@ -645,3 +645,19 @@ exports.cartdetails = (req, res) => {
     }
   });
 };
+
+//delete cart item api
+exports.deletecartitem = (req,res) => {
+  const article_id = req.body.article_id
+  const party_id = req.body.party_id
+  const query = `DELETE FROM cart Where article_id = ${article_id} and party_id = ${party_id}`;
+  connection.query(query,(error,results)=>{
+    if(error){
+      console.log("Error Executing Query:",error)
+      res.status(500).json({error : "Failed To delete data from database"})
+    } else {
+      res.status(200).json(results)
+      console.log("Deleted")
+    }
+  })
+}
