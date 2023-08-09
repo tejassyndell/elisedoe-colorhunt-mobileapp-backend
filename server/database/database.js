@@ -1,22 +1,17 @@
 /* eslint-disable */
-const mysql = require("mysql");
+const mysql = require("mysql2");
+const express = require('express')
+
+
 
 //for local connections
 
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
-  database: "colorvm3_webservicee",
-  password: "",
-  port : '3307'
+  database: "colorvm3_stagingwebservice",
+  password: ""
 });
-
-// const connection = mysql.createConnection({
-//   host: 'localhost',
-//   user: 'sincpr5_sincpr5',
-//   database: 'sincpr5_webfleet',
-//   password: 'wr5Xb9857wgq44SdLnkR!'
-// })
 
 connection.connect((err) => {
   if (err) {
