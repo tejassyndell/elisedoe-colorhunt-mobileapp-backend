@@ -647,17 +647,149 @@ exports.cartdetails = (req, res) => {
 };
 
 //delete cart item api
-exports.deletecartitem = (req,res) => {
-  const article_id = req.body.article_id
-  const party_id = req.body.party_id
+exports.deletecartitem = (req, res) => {
+  const article_id = req.body.article_id;
+  const party_id = req.body.party_id;
   const query = `DELETE FROM cart Where article_id = ${article_id} and party_id = ${party_id}`;
-  connection.query(query,(error,results)=>{
-    if(error){
-      console.log("Error Executing Query:",error)
-      res.status(500).json({error : "Failed To delete data from database"})
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.log("Error Executing Query:", error);
+      res.status(500).json({ error: "Failed To delete data from database" });
     } else {
-      res.status(200).json(results)
-      console.log("Deleted")
+      res.status(200).json(results);
+      console.log("Deleted");
     }
-  })
-}
+  });
+};
+
+exports.getCartArticleDetails = async (req, res) => {
+  try {
+    const { ArticleId, PartyId } = req.query;
+
+    async function calculateArticleData(ArticleId, PartyId) {
+      try {
+        const articleFlagCheckQuery = `SELECT ArticleOpenFlag FROM article WHERE Id = '${ArticleId}'`;
+        const outletArticleRateQuery = `SELECT UserId, OutletArticleRate, OutletAssign FROM party WHERE Id = '${PartyId}'`;
+
+        const [articleFlagCheck, outletArticleRate] = await Promise.all([
+          executeQuery(articleFlagCheckQuery),
+          executeQuery(outletArticleRateQuery),
+        ]);
+
+        let totalInward = 0;
+        let totalOutwards = 0;
+
+        const inwardQuery = `SELECT NoPacks FROM Inward WHERE ArticleId = '${ArticleId}'`;
+        const outwardQuery = `SELECT NoPacks FROM Outward WHERE ArticleId = '${ArticleId}'`;
+        // Other queries for salesreturns, purchasereturns, stocktransfers, stockshortage, SO, etc.
+
+        const [inwards, outwards] = await Promise.all([
+          executeQuery(inwardQuery),
+          executeQuery(outwardQuery),
+          // Execute other queries and store the results in their respective variables
+        ]);
+
+        // Process inward records
+        for (const inward of inwards) {
+          if (inward.NoPacks.includes(",")) {
+            totalInward += inward.NoPacks.split(",").reduce(
+              (acc, val) => acc + parseInt(val),
+              0
+            );
+          } else {
+            totalInward += parseInt(inward.NoPacks);
+          }
+        }
+
+        // Process other records like salesreturns, purchasereturns, stocktransfers, stockshortage, SO, etc.
+
+        // Calculate TotalRemaining
+        const TotalRemaining = totalInward - totalOutwards;
+
+        let outletArticleRateValue;
+        if (outletArticleRate[0].OutletAssign === 1) {
+          outletArticleRateValue = outletArticleRate[0].OutletArticleRate;
+        } else {
+          let outletPartyArticleRate;
+          if (outletArticleRate[0].UserId) {
+            const userRecordQuery = `SELECT PartyId FROM Users WHERE Id = '${outletArticleRate[0].UserId}'`;
+            const userRecord = await executeQuery(userRecordQuery);
+            if (userRecord[0].PartyId !== 0) {
+              const outletPartyArticleRateQuery = `SELECT OutletArticleRate FROM party WHERE Id = '${userRecord[0].PartyId}'`;
+              const outletPartyResult = await executeQuery(
+                outletPartyArticleRateQuery
+              );
+              outletPartyArticleRate = outletPartyResult[0].OutletArticleRate;
+            } else {
+              // Set outletPartyArticleRate to 0 or any default value as needed
+              outletPartyArticleRate = 0;
+            }
+          } else {
+            // Set outletPartyArticleRate to 0 or any default value as needed
+            outletPartyArticleRate = 0;
+          }
+          outletArticleRateValue =
+            outletPartyArticleRate || outletArticleRate[0].OutletArticleRate;
+        }
+
+        if (articleFlagCheck[0].ArticleOpenFlag === 0) {
+          const articleDataQuery = `SELECT Quantity, art.ArticleNumber, art.ArticleRate, art.ArticleRatio, art.ArticleSize, art.ArticleColor, (CASE WHEN c.Title is NULL THEN cc.Title ELSE c.Title END) AS Category, i.SalesNoPacks FROM cart LEFT JOIN article art ON cart.article_id LEFT JOIN po p ON p.ArticleId = cart.article_id LEFT JOIN category c ON c.Id = p.CategoryId LEFT JOIN category cc ON cc.Id = art.CategoryId LEFT JOIN articlerate ar ON ar.ArticleID = art.Id INNER JOIN inward i ON i.ArticleId = art.Id WHERE art.Id = ${ArticleId} ORDER BY i.Id DESC LIMIT 0, 1  `;
+
+          const data = await executeQuery(articleDataQuery);
+          for (const record of data) {
+            record.NoPacks = TotalRemaining;
+            if (outletArticleRate.length !== 0) {
+              record.ArticleRate += outletArticleRateValue;
+            }
+          }
+          return data;
+        } else {
+          const mixNoPacksQuery = `SELECT mxp.NoPacks, a.ArticleNumber, c.Title AS Category, ar.ArticleRate, a.ArticleOpenFlag
+                  FROM mixnopacks mxp
+                  INNER JOIN article a ON a.Id=mxp.ArticleId
+                  LEFT JOIN category c ON c.Id=a.CategoryId
+                  LEFT JOIN articlerate ar ON ar.ArticleId=a.Id
+                  WHERE mxp.ArticleId='${ArticleId}'`;
+
+          const data = await executeQuery(mixNoPacksQuery);
+          for (const record of data) {
+            record.NoPacks = TotalRemaining;
+            record.ArticleRate += outletArticleRateValue;
+          }
+          return data;
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        throw error;
+      }
+    }
+
+    const photosquery = `SELECT GROUP_CONCAT(ap.Name) AS photos FROM article a
+      LEFT JOIN articlephotos ap ON a.Id = ap.ArticlesId
+      LEFT JOIN articlerate ar ON a.Id = ar.ArticleId
+      LEFT JOIN category c ON a.CategoryId = c.Id
+      WHERE a.Id = ${ArticleId};`;
+
+    const [calculatedData, photosResult] = await Promise.all([
+      calculateArticleData(ArticleId, PartyId),
+      executeQuery(photosquery),
+    ]);
+
+    if (photosResult.length === 0) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    const formattedResult = {
+      ...photosResult[0],
+      photos: photosResult[0].photos ? photosResult[0].photos.split(",") : [],
+    };
+
+    // Merge the calculated data into the formatted result
+    formattedResult.calculatedData = calculatedData;
+
+    res.json(formattedResult);
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ error: "Failed to get data from database table" });
+  }
+};
