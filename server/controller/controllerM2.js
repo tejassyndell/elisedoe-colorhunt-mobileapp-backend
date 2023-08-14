@@ -4,6 +4,8 @@ const { json } = require("body-parser");
 const connection = require("../database/database.js");
 const multer = require("multer");
 
+
+//image upload function
 const imgconfig = multer.diskStorage({
   destination: (req, file, callback) => {
     callback(null, "./uploads");
@@ -662,6 +664,7 @@ exports.deletecartitem = (req, res) => {
   });
 };
 
+//edit page api 
 exports.getCartArticleDetails = async (req, res) => {
   try {
     const { ArticleId, PartyId } = req.query;
