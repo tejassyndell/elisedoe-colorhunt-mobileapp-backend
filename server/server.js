@@ -9,7 +9,7 @@ const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
-  database: "colorvm3_stagingwebservice",
+  database: "colorhunt",
 });
 connection.connect(function (err) {
   if (err) throw err;

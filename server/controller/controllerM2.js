@@ -31,7 +31,7 @@ exports.getAllArticles = async (req, res) => {
 
   connection.query(query, (error, productData) => {
     if (error) {
-      console.log("Error executing query:", err);
+      console.log("Error executing query:", error );
       res.status(210).json("error");
       return;
     } else {
