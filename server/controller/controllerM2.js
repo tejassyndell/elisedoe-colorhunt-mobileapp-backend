@@ -796,3 +796,18 @@ exports.getCartArticleDetails = async (req, res) => {
     res.status(500).json({ error: "Failed to get data from database table" });
   }
 };
+
+//category with photos 
+exports.getcategorywithphotos = (req,res) => {
+  const query = "SELECT Title as Category from category";
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error("Error executing query:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to retrieve data from the database" });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+}
