@@ -35,7 +35,7 @@ Routes.post("/addtocart", addtocart);
 Routes.post("/cartdetails", cartdetails);
 Routes.post("/deletecartitem",deletecartitem);
 Routes.post("/getCartArticleDetails",getCartArticleDetails)
-Routes.post("/getcategorywithphotos",getcategorywithphotos)
+Routes.get("/getcategorywithphotos",getcategorywithphotos)
 // //---------------------new change 28-----------------------
 
 module.exports = Routes;
