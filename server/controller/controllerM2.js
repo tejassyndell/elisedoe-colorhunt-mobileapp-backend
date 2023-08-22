@@ -228,19 +228,20 @@ exports.articledetails = async (req, res) => {
         }
 
         if (articleFlagCheck[0].ArticleOpenFlag === 0) {
-          const articleDataQuery = `SELECT  art.ArticleNumber, ar.ArticleRate, art.ArticleRatio, art.ArticleSize, art.ArticleColor, 
+          const articleDataQuery = `SELECT sc.Name as subcategory, art.ArticleNumber, ar.ArticleRate, art.ArticleRatio, art.ArticleSize, art.ArticleColor, 
                 
-                  (CASE WHEN c.Title IS NULL THEN cc.Title ELSE c.Title END) AS Category, i.SalesNoPacks
-                  FROM article art
-                  LEFT JOIN po p ON p.ArticleId=art.Id
-                  LEFT JOIN category c ON c.Id=p.CategoryId
-                  LEFT JOIN category cc ON cc.Id=art.CategoryId
-                  LEFT JOIN articlerate ar ON ar.ArticleId=art.Id
-                  INNER JOIN inward i ON i.ArticleId=art.Id 
-                  
-                  WHERE art.Id='${ArticleId}'
-                  ORDER BY i.Id DESC
-                  LIMIT 0, 1`;
+          (CASE WHEN c.Title IS NULL THEN cc.Title ELSE c.Title END) AS Category, i.SalesNoPacks
+          FROM article art
+          LEFT JOIN po p ON p.ArticleId=art.Id
+          LEFT JOIN category c ON c.Id=p.CategoryId
+          LEFT JOIN category cc ON cc.Id=art.CategoryId
+          LEFT JOIN subcategory sc ON sc.CategoryId = cc.Id
+          LEFT JOIN articlerate ar ON ar.ArticleId=art.Id
+          INNER JOIN inward i ON i.ArticleId=art.Id 
+          
+          WHERE art.Id= ${ArticleId}
+          ORDER BY i.Id DESC
+          LIMIT 0, 1`;
 
           const data = await executeQuery(articleDataQuery);
           for (const record of data) {
