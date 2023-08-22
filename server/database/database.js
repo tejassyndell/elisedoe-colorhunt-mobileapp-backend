@@ -1,8 +1,6 @@
 /* eslint-disable */
 const mysql = require("mysql2");
-const express = require('express')
-
-
+const express = require("express");
 
 //for local connections
 
@@ -10,7 +8,7 @@ const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
   database: "colorhunt",
-  password: ""
+  password: "",
 });
 
 connection.connect((err) => {
