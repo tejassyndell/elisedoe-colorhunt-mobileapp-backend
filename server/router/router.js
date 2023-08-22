@@ -16,12 +16,10 @@ const {
   deletecartitem,
   getCartArticleDetails,
   getcategorywithphotos,
+  transportationdropdowns,
 } = require("../controller/controllerM2.js");
 
-//for login auth
 
-// //for dashboard
-// //---------------------new change 28-----------------------
 Routes.get("/getAllArticles", getAllArticles);
 Routes.get("/getCategories", getCategories);
 Routes.get("/getParty", getParty);
@@ -36,6 +34,6 @@ Routes.post("/cartdetails", cartdetails);
 Routes.post("/deletecartitem",deletecartitem);
 Routes.post("/getCartArticleDetails",getCartArticleDetails)
 Routes.get("/getcategorywithphotos",getcategorywithphotos)
-// //---------------------new change 28-----------------------
+Routes.get("/gettransportation",transportationdropdowns)
 
 module.exports = Routes;

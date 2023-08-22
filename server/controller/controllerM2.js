@@ -811,3 +811,17 @@ exports.getcategorywithphotos = (req,res) => {
     }
   });
 }
+
+//transportation dropdown
+exports.transportationdropdowns = (req,res) => {
+  const query = `SELECT Name, Id from transportation`
+
+  connection.query(query,(error,results)=>{
+    if(error){
+      console.error("Error executing query",error)
+      res.status(500).json({error:"Failed to retrive data from database"})
+    } else {
+      res.status(200).json(results)
+    }
+  })
+}
