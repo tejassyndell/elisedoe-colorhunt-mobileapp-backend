@@ -71,7 +71,8 @@ exports.getCategories = (req, res) => {
 
 //Party Api
 exports.getParty = (req, res) => {
-  const query = "SELECT * FROM `party` WHERE `Id`=197 ";
+  const party_id = req.body.party_id
+  const query = `SELECT * FROM party WHERE Id=${party_id}`;
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
@@ -824,5 +825,22 @@ exports.transportationdropdowns = (req,res) => {
     } else {
       res.status(200).json(results)
     }
+  })
+}
+
+//phone number validation 
+exports.checkPhone = (req,res) => {
+  const phonenumber = req.body.phonenumber
+  const query = `SELECT Id, Name, COUNT(*) AS count FROM party WHERE PhoneNumber = ?`
+
+  connection.query(query,[phonenumber],(error,results)=>{
+    if(error){
+      console.log("Error Executing query",error)
+      return res.status(500).json({error:"Internal server error"})
+    }
+    const count = results[0].count
+    const Id = count > 0 ? results[0].Id : null
+    const Name = count > 0 ? results[0].Name : null
+    res.json({exists:count > 0, Id : Id, Name : Name})
   })
 }

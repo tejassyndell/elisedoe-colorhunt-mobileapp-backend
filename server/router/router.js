@@ -17,12 +17,13 @@ const {
   getCartArticleDetails,
   getcategorywithphotos,
   transportationdropdowns,
+  checkPhone,
 } = require("../controller/controllerM2.js");
 
 
 Routes.get("/getAllArticles", getAllArticles);
 Routes.get("/getCategories", getCategories);
-Routes.get("/getParty", getParty);
+Routes.post("/getParty", getParty);
 Routes.post("/addWishlist", AddWishlist);
 Routes.post("/getWishlist", getWishlist);
 Routes.post("/uploadimage", uploadimage);
@@ -35,5 +36,5 @@ Routes.post("/deletecartitem",deletecartitem);
 Routes.post("/getCartArticleDetails",getCartArticleDetails)
 Routes.get("/getcategorywithphotos",getcategorywithphotos)
 Routes.get("/gettransportation",transportationdropdowns)
-
+Routes.post("/checkPhone",checkPhone)
 module.exports = Routes;
