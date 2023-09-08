@@ -847,7 +847,7 @@ exports.checkPhone = (req,res) => {
 
 exports.SendMail = async (req, res) => {
   const { username, email, subject, message } = req.body;
-
+  console.log(username,email,subject,message)
   try {
     // Create a transporter for sending emails
     const transporter = nodemailer.createTransport({
@@ -861,7 +861,7 @@ exports.SendMail = async (req, res) => {
     // Define email content
     const mailOptions = {
       from: email,
-      to: 'nitinrathod.syndell@gmail.com',
+      to: 'developersweb002@gmail.com',
       subject: subject,
       text: `Name: ${username}\nEmail: ${email}\nSubject:${subject}\nMessage: ${message}`
     };

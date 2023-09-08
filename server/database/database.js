@@ -9,7 +9,7 @@ const express = require('express')
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
-  database: "colorhunt",
+  database: "colorvm3_stagingwebservice",
   password: ""
 });
 
