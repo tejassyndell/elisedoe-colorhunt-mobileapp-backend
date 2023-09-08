@@ -18,6 +18,7 @@ const {
   getcategorywithphotos,
   transportationdropdowns,
   checkPhone,
+  SendMail
 } = require("../controller/controllerM2.js");
 
 
@@ -37,4 +38,6 @@ Routes.post("/getCartArticleDetails",getCartArticleDetails)
 Routes.get("/getcategorywithphotos",getcategorywithphotos)
 Routes.get("/gettransportation",transportationdropdowns)
 Routes.post("/checkPhone",checkPhone)
+//for contact-us
+Routes.post('/SendMail',SendMail)
 module.exports = Routes;

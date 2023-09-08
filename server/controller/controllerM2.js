@@ -3,7 +3,7 @@
 const { json } = require("body-parser");
 const connection = require("../database/database.js");
 const multer = require("multer");
-
+const nodemailer = require('nodemailer');
 
 //image upload function
 const imgconfig = multer.diskStorage({
@@ -83,7 +83,7 @@ exports.getParty = (req, res) => {
       res.status(200).json(results);
     }
   });
-};
+}
 
 //Add to wishlist post api
 exports.AddWishlist = (req, res) => {
@@ -161,7 +161,7 @@ exports.uploadimage = (req, res) => {
 exports.articledetails = async (req, res) => {
   try {
     const { ArticleId, PartyId } = req.query;
-
+    console.log(ArticleId, PartyId );
     async function calculateArticleData(ArticleId, PartyId) {
       try {
         const articleFlagCheckQuery = `SELECT ArticleOpenFlag FROM article WHERE Id = '${ArticleId}'`;
@@ -844,3 +844,36 @@ exports.checkPhone = (req,res) => {
     res.json({exists:count > 0, Id : Id, Name : Name})
   })
 }
+
+exports.SendMail = async (req, res) => {
+  const { username, email, subject, message } = req.body;
+
+  try {
+    // Create a transporter for sending emails
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: 'developersweb001@gmail.com',
+        pass: 'jbibkrpdwsfmpwkw'
+      }
+    });
+
+    // Define email content
+    const mailOptions = {
+      from: email,
+      to: 'nitinrathod.syndell@gmail.com',
+      subject: subject,
+      text: `Name: ${username}\nEmail: ${email}\nSubject:${subject}\nMessage: ${message}`
+    };
+
+    // Send the email
+    const info = await transporter.sendMail(mailOptions);
+    // console.log('Email sent:', info);
+
+    res.status(200).json('sent');
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+}
+
