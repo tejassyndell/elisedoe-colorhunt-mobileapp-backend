@@ -29,7 +29,7 @@ const upload = multer({
 //Full Article data
 exports.getAllArticles = async (req, res) => {
   const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber ";
+    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 50 ";
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -161,7 +161,7 @@ exports.uploadimage = (req, res) => {
 exports.articledetails = async (req, res) => {
   try {
     const { ArticleId, PartyId } = req.query;
-    console.log(ArticleId, PartyId );
+    console.log(ArticleId, PartyId);
     async function calculateArticleData(ArticleId, PartyId) {
       try {
         const articleFlagCheckQuery = `SELECT ArticleOpenFlag FROM article WHERE Id = '${ArticleId}'`;
@@ -472,16 +472,14 @@ exports.orderdetails = (req, res) => {
                 if (string[key] < data[`NoPacksNew_${numberofpacks}`]) {
                   return { id: "", NoOfSetNotMatch: "true" };
                 }
-                SalesNoPacks += `${
-                  string[key] - data[`NoPacksNew_${numberofpacks}`]
-                },`;
+                SalesNoPacks += `${string[key] - data[`NoPacksNew_${numberofpacks}`]
+                  },`;
               } else {
                 if (search < data[`NoPacksNew_${numberofpacks}`]) {
                   return { id: "", NoOfSetNotMatch: "true" };
                 }
-                SalesNoPacks += `${
-                  search - data[`NoPacksNew_${numberofpacks}`]
-                },`;
+                SalesNoPacks += `${search - data[`NoPacksNew_${numberofpacks}`]
+                  },`;
               }
               NoPacks += `${data[`NoPacksNew_${numberofpacks}`]},`;
             } else {
@@ -623,6 +621,53 @@ exports.addtocart = (req, res) => {
   const query = `INSERT INTO cart (party_id,article_id,Quantity,rate) VALUES ?`;
 
   connection.query(query, [values], (error, results) => {
+    if (error) {
+      console.log("Error Executing Query:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to get data from database table " });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+};
+//find from cart api
+exports.findfromthecart = (req, res) => {
+  const party_id = req.body.party_id;
+  const article_id = req.body.article_id;
+
+  const values = [[party_id, article_id]];
+  console.log("---------", party_id, article_id);
+  const query = `SELECT id FROM cart WHERE party_id = ? AND article_id = ?`;
+
+  connection.query(query, [party_id, article_id], (error, results) => {
+    if (error) {
+      console.log("Error Executing Query:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to get data from database table " });
+    } else {
+      if (results.length == 0) {
+        res.status(200).json({ id: -1 });
+      }
+      else {
+        res.status(200).json(results);
+      }
+    }
+  });
+};
+
+
+//Update cart...
+exports.updateCartArticale = (req, res) => {
+  const id = req.body.id;
+  const Quantity = req.body.Quantity;
+  const rate = req.body.rate;
+  const serailqty = JSON.stringify(Quantity);
+  console.log(serailqty, rate, id);
+  const query = `UPDATE cart SET Quantity = ?, rate = ? WHERE id = ?;`;
+
+  connection.query(query, [serailqty,rate,id], (error, results) => {
     if (error) {
       console.log("Error Executing Query:", error);
       res
@@ -800,7 +845,7 @@ exports.getCartArticleDetails = async (req, res) => {
 };
 
 //category with photos 
-exports.getcategorywithphotos = (req,res) => {
+exports.getcategorywithphotos = (req, res) => {
   const query = "SELECT Title as Category from category";
   connection.query(query, (error, results) => {
     if (error) {
@@ -815,20 +860,24 @@ exports.getcategorywithphotos = (req,res) => {
 }
 
 //transportation dropdown
-exports.transportationdropdowns = (req,res) => {
+exports.transportationdropdowns = (req, res) => {
   const query = `SELECT Name, Id from transportation`
 
-  connection.query(query,(error,results)=>{
-    if(error){
-      console.error("Error executing query",error)
-      res.status(500).json({error:"Failed to retrive data from database"})
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error("Error executing query", error)
+      res.status(500).json({ error: "Failed to retrive data from database" })
     } else {
       res.status(200).json(results)
+      console.log(results);
     }
   })
 }
 
-
+//Add SO...
+exports.addso = (req, res) => {
+console.log(req.body);
+}
 exports.SendMail = async (req, res) => {
   const { username, email, subject, message } = req.body;
 
