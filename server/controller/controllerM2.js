@@ -29,7 +29,7 @@ const upload = multer({
 //Full Article data
 exports.getAllArticles = async (req, res) => {
   const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber  LIMIT 50";
+    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber";
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -986,7 +986,55 @@ exports.addso = (req, res) => {
 
                             if (data.ArticleOpenFlag === 1) {
                               // ... (previous code, as shown before)
+                              let mixnopacks;
+                              let NoPacks = '';
+                              let SalesNoPacks = '';
+                              connection.query('SELECT * FROM mixnopacks WHERE ArticleId = ?', [item.ArticleId], (err, result) => {
+                                if (err) { console.log(err) }
+                                else {
+                                  console.log(result,"mixnopacks");
+                                   mixnopacks = result[0];
+                                  NoPacks = item.Quantity;
+                                  SalesNoPacks = mixnopacks.NoPacks - item.Quantity;
+                                  let sonumberdata;
+                                  connection.query('SELECT COUNT(*) as total, NoPacks FROM so WHERE SoNumberId = ? AND ArticleId = ?', [SoNumberId, item.ArticleId], (err, rsult) => {
+                                    if (err) {
+                                      console.log(err);
+                                    }
+                                    else {
+                                      console.log(result,"NoPacks");
+                                      sonumberdata = rsult[0]
+                                    }
+                                  });
 
+                                  const getnppacks = sonumberdata ? sonumberdata.NoPacks : 0;
+
+                                  // Update mixnopacks
+                                  connection.query('UPDATE mixnopacks SET NoPacks = ? WHERE ArticleId = ?', [SalesNoPacks, item.ArticleId], (err, result) => {
+                                    if (err) { console.log(err); }
+                                    else {
+                                      if (sonumberdata && sonumberdata.total > 0) {
+                                        const nopacksadded = getnppacks + NoPacks;
+
+                                        // Update SO
+                                        connection.query('UPDATE so SET NoPacks = ?, OutwardNoPacks = ?, ArticleRate = ? WHERE SoNumberId = ? AND ArticleId = ?', [nopacksadded, nopacksadded, ArticleRate, SoNumberId, item.ArticleId]);
+                                      } else {
+                                        // Insert new SO record
+                                        const soadd = {
+                                          SoNumberId: SoNumberId,
+                                          ArticleId: item.ArticleId,
+                                          NoPacks: NoPacks,
+                                          OutwardNoPacks: NoPacks,
+                                          ArticleRate: ArticleRate,
+                                          created_at: data.Date,
+                                          updated_at: data.Date
+                                        };
+                                        connection.query('INSERT INTO so SET ?', [soadd]);
+                                      }
+                                    }
+                                  });
+                                }
+                              });
                             } else {
 
                               let sonumberdata;
@@ -998,19 +1046,32 @@ exports.addso = (req, res) => {
                                   console.log(err);
                                 }
                                 else {
+                                  console.log(result[0].SalesNoPacks,"pppppppp");
                                   const search = result[0].SalesNoPacks;
                                   console.log(search, "0000000");
                                   const searchString = ',';
                                   let stringcomma = 0;
 
                                   if (search.includes(searchString)) {
-                                    const string = search.split(',');
+                                    const string = search.split(',')
+                                    const nopk=item.Quantity.split(',')
+                                    let arr1 = [];
+                                    string.forEach((item, index) => {
+                                      const result = parseInt(item) - parseInt(nopk[index]);
+                                      arr1.push(result);
+                                      console.log(result, "//////////////////////", index);
+                                    });
+                                    NoPacks += item.Quantity;
+                                    SalesNoPacks = arr1.join(',');
+                                    console.log(SalesNoPacks,"&&&&&&&&&&&&&&");
                                     stringcomma = 1;
                                   }
+                                  else{
+                                    NoPacks += item.Quantity;
+                                    SalesNoPacks += (search - item.Quantity);
+                                  }
 
-
-                                  NoPacks += item.Quantity;
-                                  SalesNoPacks += (search - item.Quantity);
+                                 
 
                                   NoPacks = NoPacks.replace(/,\s*$/, ''); // Remove trailing comma
                                   SalesNoPacks = SalesNoPacks.replace(/,\s*$/, ''); // Remove trailing comma
@@ -1055,19 +1116,19 @@ exports.addso = (req, res) => {
                                       ArticleId: item.article_id,
                                       NoPacks: NoPacks,
                                       OutwardNoPacks: NoPacks,
-                                      ArticleRate: ArticleRate,
+                                      ArticleRate: item.articleRate,
                                       created_at: data.Date,
                                       updated_at: data.Date
                                     };
                                     connection.query('INSERT INTO so SET ?', [soadd], (err, result) => {
-                                      if(err){console.log(err);}
-                                      else{
-                                    connection.query('UPDATE cart SET status = 1 WHERE article_id = ?', [ item.article_id],(err,result)=>{
-                                      if(err){
-                                        console.log(err);
-                                      }
-                                     
-                                    });
+                                      if (err) { console.log(err); }
+                                      else {
+                                        connection.query('UPDATE cart SET status = 1 WHERE article_id = ?', [item.article_id], (err, result) => {
+                                          if (err) {
+                                            console.log(err);
+                                          }
+
+                                        });
 
                                       }
                                     });
@@ -1082,9 +1143,9 @@ exports.addso = (req, res) => {
                             res.status(500).json({ error: 'Internal Server Error' });
                           }
                         })
-                        
-                          res.status(200).json({status:true})
-                        
+
+                        res.status(200).json({ status: true })
+
                       }
                     }
                   );
