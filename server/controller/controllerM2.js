@@ -29,7 +29,7 @@ const upload = multer({
 //Full Article data
 exports.getAllArticles = async (req, res) => {
   const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber ";
+    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber  LIMIT 50";
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -638,7 +638,7 @@ exports.findfromthecart = (req, res) => {
 
   const values = [[party_id, article_id]];
   console.log("---------", party_id, article_id);
-  const query = `SELECT id FROM cart WHERE party_id = ? AND article_id = ?`;
+  const query = `SELECT id FROM cart WHERE party_id = ? AND article_id = ? AND status = 0`;
 
   connection.query(query, [party_id, article_id], (error, results) => {
     if (error) {
@@ -682,7 +682,7 @@ exports.updateCartArticale = (req, res) => {
 //getcartdetails api
 exports.cartdetails = (req, res) => {
   const party_id = 197;
-  const query = `SELECT ArticleNumber,ArticleColor,ArticleOpenFlag, StyleDescription, article_id, ar.articleRate, rate, (SELECT ap.Name FROM articlephotos ap WHERE ap.ArticlesId = a.Id LIMIT 1) as Photos , Quantity FROM cart INNER JOIN article a ON cart.article_id = a.Id INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id = ${party_id}`;
+  const query = `SELECT ArticleNumber,ArticleColor,ArticleOpenFlag, StyleDescription, article_id, ar.articleRate, rate, (SELECT ap.Name FROM articlephotos ap WHERE ap.ArticlesId = a.Id LIMIT 1) as Photos , Quantity FROM cart INNER JOIN article a ON cart.article_id = a.Id INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id = ${party_id} AND status = 0`;
   connection.query(query, (error, results) => {
     if (error) {
       console.log("Error Executing Query:", error);
@@ -875,218 +875,230 @@ exports.transportationdropdowns = (req, res) => {
 }
 
 //Add SO...
-exports.addso =  (req, res) => {
+exports.addso = (req, res) => {
   const data = req.body;
   let ArticleRate;
   let SoNumberId;
   // console.log(data);
- 
 
-    generateSoNumber(data.UserId, (generateSONumber) => {
-      const SO_Number = generateSONumber.SO_Number;
-      const SO_Number_Financial_Id = generateSONumber.SO_Number_Financial_Id;
-      const SO_Number_Financial = generateSONumber.SO_Number_Financial;
 
-      const insertQuery = `
+  generateSoNumber(data.UserId, (generateSONumber) => {
+    const SO_Number = generateSONumber.SO_Number;
+    const SO_Number_Financial_Id = generateSONumber.SO_Number_Financial_Id;
+    const SO_Number_Financial = generateSONumber.SO_Number_Financial;
+
+    const insertQuery = `
         INSERT INTO sonumber (SoNumber, FinancialYearId, UserId, PartyId, SoDate, Destination, Transporter, Remarks, GSTAmount, GSTPercentage, GSTType, CreatedDate)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
-      connection.query(
-        insertQuery,
-        [
-          SO_Number,
-          SO_Number_Financial_Id,
-          data.UserId,
-          data.PartyId,
-          data.Date,
-          data.Destination,
-          data.Transporter,
-          data.Remarks,
-          data.GST,
-          data.GST_Percentage,
-          data.GSTType,
-          new Date().toISOString().slice(0, 19).replace('T', ' '),
-        ],
-        (error, result) => {
-          if (error) {
-            console.error('Error inserting data:', error);
-            res.status(500).json({ error: 'Internal Server Error' });
-          } else {
-            SoNumberId = result.insertId;
-            console.log(SoNumberId,"///////////");
-            const userNameQuery = 'SELECT Name FROM Users WHERE Id = ?';
-            connection.query(userNameQuery, [data.UserId], (err, userNameResult) => {
-              if (err) {
-                console.error('Error retrieving user name:', err);
-                res.status(500).json({ error: 'Internal Server Error' });
-              } else {
-                const sodRecQuery = `
+    connection.query(
+      insertQuery,
+      [
+        SO_Number,
+        SO_Number_Financial_Id,
+        data.UserId,
+        data.PartyId,
+        data.Date,
+        data.Destination,
+        data.Transporter,
+        data.Remarks,
+        data.GST,
+        data.GST_Percentage,
+        data.GSTType,
+        new Date().toISOString().slice(0, 19).replace('T', ' '),
+      ],
+      (error, result) => {
+        if (error) {
+          console.error('Error inserting data:', error);
+          res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+          SoNumberId = result.insertId;
+          console.log(SoNumberId, "///////////");
+          const userNameQuery = 'SELECT Name FROM Users WHERE Id = ?';
+          connection.query(userNameQuery, [data.UserId], (err, userNameResult) => {
+            if (err) {
+              console.error('Error retrieving user name:', err);
+              res.status(500).json({ error: 'Internal Server Error' });
+            } else {
+              const sodRecQuery = `
                   SELECT CONCAT(?, '/', fn.StartYear, '-', fn.EndYear) AS SONumber
                   FROM sonumber sn
                   INNER JOIN financialyear fn ON fn.Id = sn.FinancialYearId
                   WHERE sn.Id = ?
                 `;
 
-                connection.query(sodRecQuery, [SO_Number, result.insertId], (err, sodRecResult) => {
-                  if (err) {
-                    console.error('Error retrieving SO data:', err);
-                    res.status(500).json({ error: 'Internal Server Error' });
-                  } else {
-                    const userName = userNameResult[0].Name;
-                    const SONumber = sodRecResult[0].SONumber;
+              connection.query(sodRecQuery, [SO_Number, result.insertId], (err, sodRecResult) => {
+                if (err) {
+                  console.error('Error retrieving SO data:', err);
+                  res.status(500).json({ error: 'Internal Server Error' });
+                } else {
+                  const userName = userNameResult[0].Name;
+                  const SONumber = sodRecResult[0].SONumber;
 
-                    const logQuery = `
+                  const logQuery = `
                       INSERT INTO UserLogs (Module, ModuleNumberId, LogType, LogDescription, UserId)
                       VALUES (?, ?, ?, ?, ?)
                     `;
 
-                    connection.query(
-                      logQuery,
-                      ['SO', result.insertId, 'Created', `${userName} created SO with SO Number ${SONumber}`, data.UserId],
-                      (err) => {
-                        if (err) {
-                          console.error('Error creating UserLog:', err);
-                          // res.status(500).json({ error: 'Internal Server Error' });
-                        } else {
-                          console.log({ message: 'SO created successfully' });
-                          data.DataArticle.map(async (item) => {
+                  connection.query(
+                    logQuery,
+                    ['SO', result.insertId, 'Created', `${userName} created SO with SO Number ${SONumber}`, data.UserId],
+                    (err) => {
+                      if (err) {
+                        console.error('Error creating UserLog:', err);
+                        res.status(500).json({ error: 'Internal Server Error' });
+                      } else {
+                        console.log({ message: 'SO created successfully' });
+                        data.DataArticle.map(async (item) => {
 
 
-                            try {
-                        
-                        
-                              if (data.DataArticle) {
-                                // If 'DataArticle' is provided in the request data, use its values
-                                ArticleRate = item.articleRate;
-                              } else {
-                                // Otherwise, fetch ArticleRate from the database based on 'ArticleId'
-                                const [artratedata] = connection.query('SELECT * FROM articlerate WHERE ArticleId = ?', [item.ArticleId]);
-                        
-                                if (artratedata.length > 0) {
-                                  const partyrec = connection.query('SELECT * FROM party WHERE Id = ?', [item.PartyId]);
-                                  const partyuser = connection.query('SELECT * FROM Users WHERE Id = ?', [partyrec[0][0].UserId]);
-                        
-                                  if (partyuser.length > 0) {
-                                    if (partyuser[0][0].PartyId !== 0) {
-                                      const outpartyrec = connection.query('SELECT * FROM party WHERE Id = ?', [partyuser[0][0].PartyId]);
-                                      ArticleRate = artratedata[0].ArticleRate + outpartyrec[0][0].OutletArticleRate;
-                                    } else {
-                                      ArticleRate = artratedata[0].ArticleRate;
-                                    }
+                          try {
+
+
+                            if (data.DataArticle) {
+                              // If 'DataArticle' is provided in the request data, use its values
+                              ArticleRate = item.articleRate;
+                            } else {
+                              // Otherwise, fetch ArticleRate from the database based on 'ArticleId'
+                              const [artratedata] = connection.query('SELECT * FROM articlerate WHERE ArticleId = ?', [item.ArticleId]);
+
+                              if (artratedata.length > 0) {
+                                const partyrec = connection.query('SELECT * FROM party WHERE Id = ?', [item.PartyId]);
+                                const partyuser = connection.query('SELECT * FROM Users WHERE Id = ?', [partyrec[0][0].UserId]);
+
+                                if (partyuser.length > 0) {
+                                  if (partyuser[0][0].PartyId !== 0) {
+                                    const outpartyrec = connection.query('SELECT * FROM party WHERE Id = ?', [partyuser[0][0].PartyId]);
+                                    ArticleRate = artratedata[0].ArticleRate + outpartyrec[0][0].OutletArticleRate;
                                   } else {
                                     ArticleRate = artratedata[0].ArticleRate;
                                   }
                                 } else {
-                                  // Handle the case when 'artratedata' is empty
-                                  ArticleRate = 0; // You can set a default value here
+                                  ArticleRate = artratedata[0].ArticleRate;
                                 }
-                              }
-                              console.log({ ArticleRate });
-                              // res.status(200).json({ ArticleRate });
-                              if (data.ArticleOpenFlag === 1) {
-                                // ... (previous code, as shown before)
-                        
                               } else {
-                                // let dataresultRows ; 
-                                //  connection.query('SELECT c.Colorflag FROM article a INNER JOIN category c ON c.Id=a.CategoryId WHERE a.Id = ?', [item.article_id],(err,result)=>{
-                                //   console.log(result,"-=-=-=-=");
-                                //  });
-                        
-                                // const dataresult = dataresultRows[0][0];
-                                // const Colorflag = dataresult.Colorflag;
-                                let datanopacks;
-                                connection.query('SELECT SalesNoPacks FROM inward WHERE ArticleId = ? ORDER BY Id DESC LIMIT 0,1', [item.article_id], (err, result) => {
-                                  // console.log(result[0],"-=-=-=-=-=");
-                                  datanopacks = result[0];
-                                });
-                        
-                                const search = datanopacks ? datanopacks.SalesNoPacks : '';
-                        
-                                const searchString = ',';
-                                let stringcomma = 0;
-                        
-                                if (search.includes(searchString)) {
-                                  const string = search.split(',');
-                                  stringcomma = 1;
-                                }
-                        
-                                let NoPacks = '';
-                                let SalesNoPacks = '';
-                        
-                                NoPacks += item.Quantity;
-                                SalesNoPacks += (search - item.Quantity);
-                        
-                                NoPacks = NoPacks.replace(/,\s*$/, ''); // Remove trailing comma
-                                SalesNoPacks = SalesNoPacks.replace(/,\s*$/, ''); // Remove trailing comma
-                        
-                                const CheckSalesNoPacks = NoPacks.split(',');
-                                const tmp = CheckSalesNoPacks.filter((x) => x.trim() !== '');
-                        
-                                let sonumberdata;
-                                connection.query('SELECT COUNT(*) as total, NoPacks FROM so WHERE SoNumberId = ? AND ArticleId = ?', [SoNumberId, item.article_id], (err, result) => {
-                                  // console.log(result,"{}}{}{}{}{}{}");
-                                  sonumberdata = result[0];
-                                });
-                        
-                                const getnppacks = sonumberdata ? sonumberdata.NoPacks : 0;
-                                connection.query('UPDATE inward SET SalesNoPacks = ? WHERE ArticleId = ?', [SalesNoPacks, item.article_id], (err, result) => {
-                                  console.log(result);
-                                });
-                        
-                                if (sonumberdata && sonumberdata.total > 0) {
-                                  console.log("{}{}{}_+_+_+");
-                                  let nopacksadded = '';
-                                  if (SalesNoPacks.includes(',')) {
-                                    const NoPacks1 = NoPacks.split(',');
-                                    const getnppacksArr = getnppacks.split(',');
-                                    getnppacksArr.forEach((vl, key) => {
-                                      nopacksadded += (parseInt(NoPacks1[key]) + parseInt(vl)) + ',';
-                                    });
-                                  } else {
-                                    nopacksadded += parseInt(getnppacks) + parseInt(NoPacks) + ',';
-                                  }
-                                  nopacksadded = nopacksadded.replace(/,\s*$/, ''); // Remove trailing comma
-                        
-                                  connection.query('UPDATE so SET NoPacks = ?, OutwardNoPacks = ?, ArticleRate = ? WHERE SoNumberId = ? AND ArticleId = ?', [nopacksadded, nopacksadded, item.articleRate, SoNumberId, item.article_id]);
-                                } else {
-                                  const soadd = {
-                                    SoNumberId: SoNumberId,
-                                    ArticleId: item.article_id,
-                                    NoPacks: NoPacks,
-                                    OutwardNoPacks: NoPacks,
-                                    ArticleRate: ArticleRate,
-                                  };
-                                  connection.query('INSERT INTO so SET ?', [soadd],(err,result)=>{
-                                    console.log(result,"[][][][][][][][][]",err,"{}{}{}{}");
-                                  });
-                                }
-                        
-                                // return res.status(200).json({ SoNumberId: SoNumberId });
-                                // console.log({ SoNumberId: SoNumberId }, "Done");
+                                // Handle the case when 'artratedata' is empty
+                                ArticleRate = 0; // You can set a default value here
                               }
-                        
-                        
-                            } catch (error) {
-                              console.error('Error:', error);
-                              res.status(500).json({ error: 'Internal Server Error' });
                             }
-                          })
-                          // res.status(200).json({ message: 'SO created successfully' });
-                        }
+                            console.log({ ArticleRate });
+
+                            if (data.ArticleOpenFlag === 1) {
+                              // ... (previous code, as shown before)
+
+                            } else {
+
+                              let sonumberdata;
+                              let getnppacks;
+                              let NoPacks = '';
+                              let SalesNoPacks = '';
+                              connection.query('SELECT SalesNoPacks FROM inward WHERE ArticleId = ? ', [item.article_id], (err, result) => {
+                                if (err) {
+                                  console.log(err);
+                                }
+                                else {
+                                  const search = result[0].SalesNoPacks;
+                                  console.log(search, "0000000");
+                                  const searchString = ',';
+                                  let stringcomma = 0;
+
+                                  if (search.includes(searchString)) {
+                                    const string = search.split(',');
+                                    stringcomma = 1;
+                                  }
+
+
+                                  NoPacks += item.Quantity;
+                                  SalesNoPacks += (search - item.Quantity);
+
+                                  NoPacks = NoPacks.replace(/,\s*$/, ''); // Remove trailing comma
+                                  SalesNoPacks = SalesNoPacks.replace(/,\s*$/, ''); // Remove trailing comma
+
+                                  const CheckSalesNoPacks = NoPacks.split(',');
+                                  const tmp = CheckSalesNoPacks.filter((x) => x.trim() !== '');
+
+
+                                  connection.query('SELECT COUNT(*) as total, NoPacks FROM so WHERE SoNumberId = ? AND ArticleId = ?', [SoNumberId, item.article_id], (err, result) => {
+                                    if (err) { console.log(err); }
+                                    else {
+                                      sonumberdata = result[0];
+                                    }
+                                  });
+
+                                  getnppacks = sonumberdata ? sonumberdata.NoPacks : 0;
+                                  connection.query('UPDATE inward SET SalesNoPacks = ? WHERE ArticleId = ?', [SalesNoPacks, item.article_id], (err, result) => {
+                                    if (err) { console.log(err); }
+                                    else {
+                                      console.log("updated inward");
+                                    }
+                                  });
+
+                                  if (sonumberdata && sonumberdata.total > 0) {
+                                    console.log("{}{}{}_+_+_+");
+                                    let nopacksadded = '';
+                                    if (SalesNoPacks.includes(',')) {
+                                      const NoPacks1 = NoPacks.split(',');
+                                      const getnppacksArr = getnppacks.split(',');
+                                      getnppacksArr.forEach((vl, key) => {
+                                        nopacksadded += (parseInt(NoPacks1[key]) + parseInt(vl)) + ',';
+                                      });
+                                    } else {
+                                      nopacksadded += parseInt(getnppacks) + parseInt(NoPacks) + ',';
+                                    }
+                                    nopacksadded = nopacksadded.replace(/,\s*$/, ''); // Remove trailing comma
+
+                                    connection.query('UPDATE so SET NoPacks = ?, OutwardNoPacks = ?, ArticleRate = ? WHERE SoNumberId = ? AND ArticleId = ?', [nopacksadded, nopacksadded, item.articleRate, SoNumberId, item.article_id]);
+                                  } else {
+                                    const soadd = {
+                                      SoNumberId: SoNumberId,
+                                      ArticleId: item.article_id,
+                                      NoPacks: NoPacks,
+                                      OutwardNoPacks: NoPacks,
+                                      ArticleRate: ArticleRate,
+                                      created_at: data.Date,
+                                      updated_at: data.Date
+                                    };
+                                    connection.query('INSERT INTO so SET ?', [soadd], (err, result) => {
+                                      if(err){console.log(err);}
+                                      else{
+                                    connection.query('UPDATE cart SET status = 1 WHERE article_id = ?', [ item.article_id],(err,result)=>{
+                                      if(err){
+                                        console.log(err);
+                                      }
+                                     
+                                    });
+
+                                      }
+                                    });
+                                  }
+                                }
+
+
+                              });
+                            }
+                          } catch (error) {
+                            console.error('Error:', error);
+                            res.status(500).json({ error: 'Internal Server Error' });
+                          }
+                        })
+                        
+                          res.status(200).json({status:true})
+                        
                       }
-                    );
-                  }
-                });
-              }
-            });
-          }
+                    }
+                  );
+                }
+              });
+            }
+          });
         }
-      );
-    });
-  
-  
- 
+      }
+    );
+  });
+
+
+
 
 }
 function generateSoNumber(UserId, callback) {
@@ -1113,7 +1125,7 @@ function generateSoNumber(UserId, callback) {
             } else {
               const soNumberString = soNumberResult[0].SoNumber;
               const soNumber = parseInt(soNumberString);
-              array.SO_Number =  soNumber + 1;
+              array.SO_Number = soNumber + 1;
               array.SO_Number_Financial_Id = finYearResult[0].Id;
               array.SO_Number_Financial = `${soNumber + 1}/${finYearResult[0].CurrentFinancialYear}`;
               callback(array);
