@@ -19,6 +19,7 @@ const {
   getcategorywithphotos,
   transportationdropdowns,
   phoneNumberValidation,
+  UserData,
 } = require("../controller/controllerM2.js");
 
 Routes.get("/getAllArticles", getAllArticles);
@@ -38,4 +39,5 @@ Routes.get("/getcategorywithphotos", getcategorywithphotos);
 Routes.get("/gettransportation", transportationdropdowns);
 Routes.post("/createAccount", createAccount);
 Routes.post("/phoneNumberValidation", phoneNumberValidation);
+Routes.post("/UserData", UserData);
 module.exports = Routes;

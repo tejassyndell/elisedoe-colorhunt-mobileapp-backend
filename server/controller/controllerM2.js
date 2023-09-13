@@ -876,9 +876,9 @@ exports.trans = (req, res) => {
 exports.phoneNumberValidation = (req, res) => {
   const { number } = req.body;
   console.log(number);
-  const query = `SELECT  Id , Name, UserId ,PhoneNumber,Address,City,State,PinCode,Country from party WHERE PhoneNumber = ?`;
-
-  connection.query(query, [number], (error, results) => {
+  const query = `SELECT  Id , Name, UserId ,PhoneNumber,Additional_phone_numbers,Address,City,State,PinCode,Country from party WHERE PhoneNumber = ? OR Additional_phone_numbers LIKE ?`;
+  const numberPattern = `%${number}%`;
+  connection.query(query, [number, numberPattern], (error, results) => {
     if (error) {
       console.error("Error executing query", error);
       res.status(500).json({ error: "Failed to retrive data from database" });
@@ -890,4 +890,37 @@ exports.phoneNumberValidation = (req, res) => {
       }
     }
   });
+};
+
+exports.UserData = (req, res) => {
+  const {
+    name,
+    address,
+    phoneNumber,
+    state,
+    city,
+    country,
+    pinCode,
+    contactPerson,
+  } = req.body;
+
+  const insertQuery = `
+    INSERT INTO party
+    (Name, Address, PhoneNumber, State, City, Country, PinCode, ContactPerson)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  connection.query(
+    insertQuery,
+    [name, address, phoneNumber, state, city, country, pinCode, contactPerson],
+    (err, result) => {
+      if (err) {
+        console.error("Error inserting data:", err);
+        res.status(500).json({ error: "Internal server error" });
+      } else {
+        console.log("Data inserted successfully");
+        res.status(201).json({ message: "Data inserted successfully" });
+      }
+    }
+  );
 };
