@@ -28,7 +28,7 @@ const upload = multer({
 //Full Article data
 exports.getAllArticles = async (req, res) => {
   const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber ";
+    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 100 ";
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -39,6 +39,39 @@ exports.getAllArticles = async (req, res) => {
       res.status(200).json(productData);
     }
   });
+};
+
+//createAccount
+exports.createAccount = async (req, res) => {
+  const {
+    name,
+    address,
+    phoneNumber,
+    state,
+    country,
+    city,
+    pincode,
+    contactPerson,
+  } = req.body;
+
+  const insertQuery =
+    "INSERT INTO account (Name, Address, PhoneNumber, State, Country, City, Pincode, ContactPerson) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+  connection.query(
+    insertQuery,
+    [name, address, phoneNumber, state, country, city, pincode, contactPerson],
+    (err, result) => {
+      if (err) {
+        console.error("Error inserting data:", err);
+        res
+          .status(500)
+          .json({ error: "Failed to insert data into the database" });
+      } else {
+        console.log("Account data inserted:", result);
+        res.status(200).json({ message: "Account created successfully" });
+      }
+    }
+  );
 };
 
 function executeQuery(query) {
@@ -56,6 +89,7 @@ function executeQuery(query) {
 //Categories
 exports.getCategories = (req, res) => {
   const query = "SELECT Title as Category from category";
+  console.log("done");
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
@@ -822,6 +856,38 @@ exports.transportationdropdowns = (req, res) => {
       res.status(500).json({ error: "Failed to retrive data from database" });
     } else {
       res.status(200).json(results);
+    }
+  });
+};
+
+exports.trans = (req, res) => {
+  const query = `SELECT Name, Id from transportation`;
+
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error("Error executing query", error);
+      res.status(500).json({ error: "Failed to retrive data from database" });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+};
+
+exports.phoneNumberValidation = (req, res) => {
+  const { number } = req.body;
+  console.log(number);
+  const query = `SELECT  Id , Name, UserId ,PhoneNumber,Address,City,State,PinCode,Country from party WHERE PhoneNumber = ?`;
+
+  connection.query(query, [number], (error, results) => {
+    if (error) {
+      console.error("Error executing query", error);
+      res.status(500).json({ error: "Failed to retrive data from database" });
+    } else {
+      if (results.length > 0) {
+        res.status(200).json(results);
+      } else {
+        res.status(201).json();
+      }
     }
   });
 };
