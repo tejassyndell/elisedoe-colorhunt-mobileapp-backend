@@ -906,8 +906,8 @@ exports.UserData = (req, res) => {
 
   const insertQuery = `
     INSERT INTO party
-    (Name, Address, PhoneNumber, State, City, Country, PinCode, ContactPerson)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    (Name, Address, PhoneNumber, State, City, Country, PinCode, ContactPerson, Status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
   `;
 
   connection.query(
