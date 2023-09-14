@@ -2,6 +2,7 @@
 const express = require("express");
 const Routes = express.Router();
 const {
+  createAccount,
   getAllArticles,
   getCategories,
   getParty,
@@ -19,9 +20,10 @@ const {
   transportationdropdowns,
   SendMail,findfromthecart,
   updateCartArticale,
-  addso
+  addso,
+  phoneNumberValidation,
+  UserData
 } = require("../controller/controllerM2.js");
-
 
 Routes.get("/getAllArticles", getAllArticles);
 Routes.get("/getCategories", getCategories);
@@ -41,6 +43,8 @@ Routes.post("/getCartArticleDetails",getCartArticleDetails)
 Routes.get("/getcategorywithphotos",getcategorywithphotos)
 Routes.get("/gettransportation",transportationdropdowns)
 Routes.post("/addso",addso);
-//for contact-us
 Routes.post('/SendMail',SendMail)
+Routes.post("/createAccount", createAccount);
+Routes.post("/phoneNumberValidation", phoneNumberValidation);
+Routes.post("/UserData", UserData);
 module.exports = Routes;

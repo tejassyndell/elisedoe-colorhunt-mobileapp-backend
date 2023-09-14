@@ -25,3 +25,9 @@ yarn.lock
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.json
+*.json
+server/.env
+server/app.js
+*.js
+server/node_modules/.bin/mime

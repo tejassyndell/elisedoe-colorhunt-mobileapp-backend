@@ -42,6 +42,39 @@ exports.getAllArticles = async (req, res) => {
   });
 };
 
+//createAccount
+exports.createAccount = async (req, res) => {
+  const {
+    name,
+    address,
+    phoneNumber,
+    state,
+    country,
+    city,
+    pincode,
+    contactPerson,
+  } = req.body;
+
+  const insertQuery =
+    "INSERT INTO account (Name, Address, PhoneNumber, State, Country, City, Pincode, ContactPerson) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+  connection.query(
+    insertQuery,
+    [name, address, phoneNumber, state, country, city, pincode, contactPerson],
+    (err, result) => {
+      if (err) {
+        console.error("Error inserting data:", err);
+        res
+          .status(500)
+          .json({ error: "Failed to insert data into the database" });
+      } else {
+        console.log("Account data inserted:", result);
+        res.status(200).json({ message: "Account created successfully" });
+      }
+    }
+  );
+};
+
 function executeQuery(query) {
   return new Promise((resolve, reject) => {
     connection.query(query, (error, results) => {
@@ -57,6 +90,7 @@ function executeQuery(query) {
 //Categories
 exports.getCategories = (req, res) => {
   const query = "SELECT Title as Category from category";
+  console.log("done");
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
@@ -711,7 +745,7 @@ exports.deletecartitem = (req, res) => {
   });
 };
 
-//edit page api 
+//edit page api
 exports.getCartArticleDetails = async (req, res) => {
   try {
     const { ArticleId, PartyId } = req.query;
@@ -857,7 +891,7 @@ exports.getcategorywithphotos = (req, res) => {
       res.status(200).json(results);
     }
   });
-}
+};
 
 //transportation dropdown
 exports.transportationdropdowns = (req, res) => {
@@ -1234,4 +1268,58 @@ exports.SendMail = async (req, res) => {
     res.status(500).json({ error: 'Failed to send email' });
   }
 }
+
+
+
+exports.phoneNumberValidation = (req, res) => {
+  const { number } = req.body;
+  console.log(number);
+  const query = `SELECT  Id , Name, UserId ,PhoneNumber,Additional_phone_numbers,Address,City,State,PinCode,Country from party WHERE PhoneNumber = ? OR Additional_phone_numbers LIKE ?`;
+  const numberPattern = `%${number}%`;
+  connection.query(query, [number, numberPattern], (error, results) => {
+    if (error) {
+      console.error("Error executing query", error);
+      res.status(500).json({ error: "Failed to retrive data from database" });
+    } else {
+      if (results.length > 0) {
+        res.status(200).json(results);
+      } else {
+        res.status(201).json();
+      }
+    }
+  });
+};
+
+exports.UserData = (req, res) => {
+  const {
+    name,
+    address,
+    phoneNumber,
+    state,
+    city,
+    country,
+    pinCode,
+    contactPerson,
+  } = req.body;
+
+  const insertQuery = `
+    INSERT INTO party
+    (Name, Address, PhoneNumber, State, City, Country, PinCode, ContactPerson, Status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+  `;
+
+  connection.query(
+    insertQuery,
+    [name, address, phoneNumber, state, city, country, pinCode, contactPerson],
+    (err, result) => {
+      if (err) {
+        console.error("Error inserting data:", err);
+        res.status(500).json({ error: "Internal server error" });
+      } else {
+        console.log("Data inserted successfully");
+        res.status(201).json({ message: "Data inserted successfully" });
+      }
+    }
+  );
+};
 

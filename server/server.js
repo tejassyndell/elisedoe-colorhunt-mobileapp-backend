@@ -1,20 +1,57 @@
 /* eslint-disable */
 const Express = require("express");
-
+const bodyParser = require;
+("body-parser");
 const app = Express();
 const mysql = require("mysql");
 const cors = require("cors");
 app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
-  database: "colorvm3_stagingwebservice",
+  database: "colorhunt",
 });
 connection.connect(function (err) {
   if (err) throw err;
   console.log("Connected!");
 });
+app.post("/createAccount", (req, res) => {
+  const {
+    name,
+    address,
+    phoneNumber,
+    state,
+    country,
+    city,
+    pincode,
+    contactPerson,
+  } = req.body;
+
+  const insertQuery =
+    "INSERT INTO account (Name, Address, PhoneNumber, State, Country, City, Pincode, ContactPerson) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+  connection.query(
+    insertQuery,
+    [name, address, phoneNumber, state, country, city, pincode, contactPerson],
+    (err, result) => {
+      if (err) {
+        console.error("Error inserting data:", err);
+        res
+          .status(500)
+          .json({ error: "Failed to insert data into the database" });
+      } else {
+        console.log("Account data inserted:", result);
+        res.status(200).json({ message: "Account created successfully" });
+      }
+    }
+  );
+});
+
+// ... Other routes and configurations
+
 app.listen(4000, () => {
   console.log("Server is listening on Port : 4000");
 });
