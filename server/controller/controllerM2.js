@@ -29,7 +29,7 @@ const upload = multer({
 //Full Article data
 exports.getAllArticles = async (req, res) => {
   const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber";
+    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 50";
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -1018,12 +1018,12 @@ exports.addso = (req, res) => {
                             }
                             console.log({ ArticleRate });
 
-                            if (data.ArticleOpenFlag === 1) {
+                            if (item.ArticleOpenFlag === 1) {
                               // ... (previous code, as shown before)
                               let mixnopacks;
                               let NoPacks = '';
                               let SalesNoPacks = '';
-                              connection.query('SELECT * FROM mixnopacks WHERE ArticleId = ?', [item.ArticleId], (err, result) => {
+                              connection.query('SELECT * FROM mixnopacks WHERE ArticleId = ?', [item.article_id], (err, result) => {
                                 if (err) { console.log(err) }
                                 else {
                                   console.log(result,"mixnopacks");
@@ -1031,7 +1031,7 @@ exports.addso = (req, res) => {
                                   NoPacks = item.Quantity;
                                   SalesNoPacks = mixnopacks.NoPacks - item.Quantity;
                                   let sonumberdata;
-                                  connection.query('SELECT COUNT(*) as total, NoPacks FROM so WHERE SoNumberId = ? AND ArticleId = ?', [SoNumberId, item.ArticleId], (err, rsult) => {
+                                  connection.query('SELECT COUNT(*) as total, NoPacks FROM so WHERE SoNumberId = ? AND ArticleId = ?', [SoNumberId, item.article_id], (err, rsult) => {
                                     if (err) {
                                       console.log(err);
                                     }
@@ -1044,22 +1044,21 @@ exports.addso = (req, res) => {
                                   const getnppacks = sonumberdata ? sonumberdata.NoPacks : 0;
 
                                   // Update mixnopacks
-                                  connection.query('UPDATE mixnopacks SET NoPacks = ? WHERE ArticleId = ?', [SalesNoPacks, item.ArticleId], (err, result) => {
+                                  connection.query('UPDATE mixnopacks SET NoPacks = ? WHERE ArticleId = ?', [SalesNoPacks, item.article_id], (err, result) => {
                                     if (err) { console.log(err); }
                                     else {
                                       if (sonumberdata && sonumberdata.total > 0) {
                                         const nopacksadded = getnppacks + NoPacks;
-
                                         // Update SO
-                                        connection.query('UPDATE so SET NoPacks = ?, OutwardNoPacks = ?, ArticleRate = ? WHERE SoNumberId = ? AND ArticleId = ?', [nopacksadded, nopacksadded, ArticleRate, SoNumberId, item.ArticleId]);
+                                        connection.query('UPDATE so SET NoPacks = ?, OutwardNoPacks = ?, ArticleRate = ? WHERE SoNumberId = ? AND ArticleId = ?', [nopacksadded, nopacksadded, item.articleRate, SoNumberId, item.article_id]);
                                       } else {
                                         // Insert new SO record
                                         const soadd = {
                                           SoNumberId: SoNumberId,
-                                          ArticleId: item.ArticleId,
+                                          ArticleId: item.article_id,
                                           NoPacks: NoPacks,
                                           OutwardNoPacks: NoPacks,
-                                          ArticleRate: ArticleRate,
+                                          ArticleRate: item.articleRate,
                                           created_at: data.Date,
                                           updated_at: data.Date
                                         };
