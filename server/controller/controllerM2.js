@@ -1026,8 +1026,8 @@ exports.addso = (req, res) => {
                               connection.query('SELECT * FROM mixnopacks WHERE ArticleId = ?', [item.article_id], (err, result) => {
                                 if (err) { console.log(err) }
                                 else {
-                                  console.log(result,"mixnopacks");
-                                   mixnopacks = result[0];
+                                  console.log(result, "mixnopacks");
+                                  mixnopacks = result[0];
                                   NoPacks = item.Quantity;
                                   SalesNoPacks = mixnopacks.NoPacks - item.Quantity;
                                   let sonumberdata;
@@ -1036,7 +1036,7 @@ exports.addso = (req, res) => {
                                       console.log(err);
                                     }
                                     else {
-                                      console.log(result,"NoPacks");
+                                      console.log(result, "NoPacks");
                                       sonumberdata = rsult[0]
                                     }
                                   });
@@ -1079,7 +1079,7 @@ exports.addso = (req, res) => {
                                   console.log(err);
                                 }
                                 else {
-                                  console.log(result[0].SalesNoPacks,"pppppppp");
+                                  console.log(result[0].SalesNoPacks, "pppppppp");
                                   const search = result[0].SalesNoPacks;
                                   console.log(search, "0000000");
                                   const searchString = ',';
@@ -1087,7 +1087,7 @@ exports.addso = (req, res) => {
 
                                   if (search.includes(searchString)) {
                                     const string = search.split(',')
-                                    const nopk=item.Quantity.split(',')
+                                    const nopk = item.Quantity.split(',')
                                     let arr1 = [];
                                     string.forEach((item, index) => {
                                       const result = parseInt(item) - parseInt(nopk[index]);
@@ -1096,15 +1096,15 @@ exports.addso = (req, res) => {
                                     });
                                     NoPacks += item.Quantity;
                                     SalesNoPacks = arr1.join(',');
-                                    console.log(SalesNoPacks,"&&&&&&&&&&&&&&");
+                                    console.log(SalesNoPacks, "&&&&&&&&&&&&&&");
                                     stringcomma = 1;
                                   }
-                                  else{
+                                  else {
                                     NoPacks += item.Quantity;
                                     SalesNoPacks += (search - item.Quantity);
                                   }
 
-                                 
+
 
                                   NoPacks = NoPacks.replace(/,\s*$/, ''); // Remove trailing comma
                                   SalesNoPacks = SalesNoPacks.replace(/,\s*$/, ''); // Remove trailing comma
@@ -1320,5 +1320,36 @@ exports.UserData = (req, res) => {
       }
     }
   );
+};
+
+exports.CollectInwardForCartArticals = async (req, res) => {
+  try {
+    const { arr1 } = req.body;
+    console.log(arr1);
+    let arr2 = [];
+    const q1 = 'SELECT SalesNoPacks , ArticleId FROM inward WHERE ArticleId = ?';
+    
+    // Assuming cartDataIdArray contains the item IDs you want to query
+
+    // Use Promise.all to execute all queries in parallel
+    await Promise.all(arr1.map(async (item) => {
+      const result = await new Promise((resolve, reject) => {
+        connection.query(q1, [item], (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
+        });
+      });
+      arr2.push(result[0]);
+    }));
+    
+    // Send arr2 as a response or perform other actions as needed
+    res.status(200).json({ data: arr2 });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
 };
 
