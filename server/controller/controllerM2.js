@@ -3,6 +3,7 @@
 const { json } = require("body-parser");
 const connection = require("../database/database.js");
 const multer = require("multer");
+const nodemailer = require('nodemailer');
 
 //image upload function
 const imgconfig = multer.diskStorage({
@@ -28,7 +29,7 @@ const upload = multer({
 //Full Article data
 exports.getAllArticles = async (req, res) => {
   const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 100 ";
+    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 100";
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -104,7 +105,8 @@ exports.getCategories = (req, res) => {
 
 //Party Api
 exports.getParty = (req, res) => {
-  const query = "SELECT * FROM `party` WHERE `Id`=197 ";
+  const party_id = req.body.party_id
+  const query = `SELECT * FROM party WHERE Id=${party_id}`;
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
@@ -115,7 +117,7 @@ exports.getParty = (req, res) => {
       res.status(200).json(results);
     }
   });
-};
+}
 
 //Add to wishlist post api
 exports.AddWishlist = (req, res) => {
@@ -193,7 +195,7 @@ exports.uploadimage = (req, res) => {
 exports.articledetails = async (req, res) => {
   try {
     const { ArticleId, PartyId } = req.query;
-
+    console.log(ArticleId, PartyId);
     async function calculateArticleData(ArticleId, PartyId) {
       try {
         const articleFlagCheckQuery = `SELECT ArticleOpenFlag FROM article WHERE Id = '${ArticleId}'`;
@@ -504,16 +506,14 @@ exports.orderdetails = (req, res) => {
                 if (string[key] < data[`NoPacksNew_${numberofpacks}`]) {
                   return { id: "", NoOfSetNotMatch: "true" };
                 }
-                SalesNoPacks += `${
-                  string[key] - data[`NoPacksNew_${numberofpacks}`]
-                },`;
+                SalesNoPacks += `${string[key] - data[`NoPacksNew_${numberofpacks}`]
+                  },`;
               } else {
                 if (search < data[`NoPacksNew_${numberofpacks}`]) {
                   return { id: "", NoOfSetNotMatch: "true" };
                 }
-                SalesNoPacks += `${
-                  search - data[`NoPacksNew_${numberofpacks}`]
-                },`;
+                SalesNoPacks += `${search - data[`NoPacksNew_${numberofpacks}`]
+                  },`;
               }
               NoPacks += `${data[`NoPacksNew_${numberofpacks}`]},`;
             } else {
@@ -665,11 +665,58 @@ exports.addtocart = (req, res) => {
     }
   });
 };
+//find from cart api
+exports.findfromthecart = (req, res) => {
+  const party_id = req.body.party_id;
+  const article_id = req.body.article_id;
+
+  const values = [[party_id, article_id]];
+  console.log("---------", party_id, article_id);
+  const query = `SELECT id FROM cart WHERE party_id = ? AND article_id = ? AND status = 0`;
+
+  connection.query(query, [party_id, article_id], (error, results) => {
+    if (error) {
+      console.log("Error Executing Query:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to get data from database table " });
+    } else {
+      if (results.length == 0) {
+        res.status(200).json({ id: -1 });
+      }
+      else {
+        res.status(200).json(results);
+      }
+    }
+  });
+};
+
+
+//Update cart...
+exports.updateCartArticale = (req, res) => {
+  const id = req.body.id;
+  const Quantity = req.body.Quantity;
+  const rate = req.body.rate;
+  const serailqty = JSON.stringify(Quantity);
+  console.log(serailqty, rate, id);
+  const query = `UPDATE cart SET Quantity = ?, rate = ? WHERE id = ?;`;
+
+  connection.query(query, [serailqty, rate, id], (error, results) => {
+    if (error) {
+      console.log("Error Executing Query:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to get data from database table " });
+    } else {
+      res.status(200).json(results);
+    }
+  });
+};
 
 //getcartdetails api
 exports.cartdetails = (req, res) => {
   const party_id = 197;
-  const query = `SELECT ArticleNumber, StyleDescription, article_id, ar.articleRate, rate, (SELECT ap.Name FROM articlephotos ap WHERE ap.ArticlesId = a.Id LIMIT 1) as Photos , Quantity FROM cart INNER JOIN article a ON cart.article_id = a.Id INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id = ${party_id}`;
+  const query = `SELECT ArticleNumber,ArticleColor,ArticleOpenFlag, StyleDescription, article_id, ar.articleRate, rate, (SELECT ap.Name FROM articlephotos ap WHERE ap.ArticlesId = a.Id LIMIT 1) as Photos , Quantity FROM cart INNER JOIN article a ON cart.article_id = a.Id INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id = ${party_id} AND status = 0`;
   connection.query(query, (error, results) => {
     if (error) {
       console.log("Error Executing Query:", error);
@@ -831,7 +878,7 @@ exports.getCartArticleDetails = async (req, res) => {
   }
 };
 
-//category with photos
+//category with photos 
 exports.getcategorywithphotos = (req, res) => {
   const query = "SELECT Title as Category from category";
   connection.query(query, (error, results) => {
@@ -848,30 +895,380 @@ exports.getcategorywithphotos = (req, res) => {
 
 //transportation dropdown
 exports.transportationdropdowns = (req, res) => {
-  const query = `SELECT Name, Id from transportation`;
+  const query = `SELECT Name, Id from transportation`
 
   connection.query(query, (error, results) => {
     if (error) {
-      console.error("Error executing query", error);
-      res.status(500).json({ error: "Failed to retrive data from database" });
+      console.error("Error executing query", error)
+      res.status(500).json({ error: "Failed to retrive data from database" })
     } else {
-      res.status(200).json(results);
+      res.status(200).json(results)
+      console.log(results);
+    }
+  })
+}
+
+//Add SO...
+exports.addso = (req, res) => {
+  const data = req.body;
+  let ArticleRate;
+  let SoNumberId;
+  // console.log(data);
+
+
+  generateSoNumber(data.UserId, (generateSONumber) => {
+    const SO_Number = generateSONumber.SO_Number;
+    const SO_Number_Financial_Id = generateSONumber.SO_Number_Financial_Id;
+    const SO_Number_Financial = generateSONumber.SO_Number_Financial;
+
+    const insertQuery = `
+        INSERT INTO sonumber (SoNumber, FinancialYearId, UserId, PartyId, SoDate, Destination, Transporter, Remarks, GSTAmount, GSTPercentage, GSTType, CreatedDate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+    connection.query(
+      insertQuery,
+      [
+        SO_Number,
+        SO_Number_Financial_Id,
+        data.UserId,
+        data.PartyId,
+        data.Date,
+        data.Destination,
+        data.Transporter,
+        data.Remarks,
+        data.GST,
+        data.GST_Percentage,
+        data.GSTType,
+        new Date().toISOString().slice(0, 19).replace('T', ' '),
+      ],
+      (error, result) => {
+        if (error) {
+          console.error('Error inserting data:', error);
+          res.status(500).json({ error: 'Internal Server Error' });
+        } else {
+          SoNumberId = result.insertId;
+          console.log(SoNumberId, "///////////");
+          const userNameQuery = 'SELECT Name FROM Users WHERE Id = ?';
+          connection.query(userNameQuery, [data.UserId], (err, userNameResult) => {
+            if (err) {
+              console.error('Error retrieving user name:', err);
+              res.status(500).json({ error: 'Internal Server Error' });
+            } else {
+              const sodRecQuery = `
+                  SELECT CONCAT(?, '/', fn.StartYear, '-', fn.EndYear) AS SONumber
+                  FROM sonumber sn
+                  INNER JOIN financialyear fn ON fn.Id = sn.FinancialYearId
+                  WHERE sn.Id = ?
+                `;
+
+              connection.query(sodRecQuery, [SO_Number, result.insertId], (err, sodRecResult) => {
+                if (err) {
+                  console.error('Error retrieving SO data:', err);
+                  res.status(500).json({ error: 'Internal Server Error' });
+                } else {
+                  const userName = userNameResult[0].Name;
+                  const SONumber = sodRecResult[0].SONumber;
+
+                  const logQuery = `
+                      INSERT INTO UserLogs (Module, ModuleNumberId, LogType, LogDescription, UserId)
+                      VALUES (?, ?, ?, ?, ?)
+                    `;
+
+                  connection.query(
+                    logQuery,
+                    ['SO', result.insertId, 'Created', `${userName} created SO with SO Number ${SONumber}`, data.UserId],
+                    (err) => {
+                      if (err) {
+                        console.error('Error creating UserLog:', err);
+                        res.status(500).json({ error: 'Internal Server Error' });
+                      } else {
+                        console.log({ message: 'SO created successfully' });
+                        data.DataArticle.map(async (item) => {
+
+
+                          try {
+
+
+                            if (data.DataArticle) {
+                              // If 'DataArticle' is provided in the request data, use its values
+                              ArticleRate = item.articleRate;
+                            } else {
+                              // Otherwise, fetch ArticleRate from the database based on 'ArticleId'
+                              const [artratedata] = connection.query('SELECT * FROM articlerate WHERE ArticleId = ?', [item.ArticleId]);
+
+                              if (artratedata.length > 0) {
+                                const partyrec = connection.query('SELECT * FROM party WHERE Id = ?', [item.PartyId]);
+                                const partyuser = connection.query('SELECT * FROM Users WHERE Id = ?', [partyrec[0][0].UserId]);
+
+                                if (partyuser.length > 0) {
+                                  if (partyuser[0][0].PartyId !== 0) {
+                                    const outpartyrec = connection.query('SELECT * FROM party WHERE Id = ?', [partyuser[0][0].PartyId]);
+                                    ArticleRate = artratedata[0].ArticleRate + outpartyrec[0][0].OutletArticleRate;
+                                  } else {
+                                    ArticleRate = artratedata[0].ArticleRate;
+                                  }
+                                } else {
+                                  ArticleRate = artratedata[0].ArticleRate;
+                                }
+                              } else {
+                                // Handle the case when 'artratedata' is empty
+                                ArticleRate = 0; // You can set a default value here
+                              }
+                            }
+                            console.log({ ArticleRate });
+
+                            if (item.ArticleOpenFlag === 1) {
+                              // ... (previous code, as shown before)
+                              let mixnopacks;
+                              let NoPacks = '';
+                              let SalesNoPacks = '';
+                              connection.query('SELECT * FROM mixnopacks WHERE ArticleId = ?', [item.article_id], (err, result) => {
+                                if (err) { console.log(err) }
+                                else {
+                                  console.log(result,"mixnopacks");
+                                   mixnopacks = result[0];
+                                  NoPacks = item.Quantity;
+                                  SalesNoPacks = mixnopacks.NoPacks - item.Quantity;
+                                  let sonumberdata;
+                                  connection.query('SELECT COUNT(*) as total, NoPacks FROM so WHERE SoNumberId = ? AND ArticleId = ?', [SoNumberId, item.article_id], (err, rsult) => {
+                                    if (err) {
+                                      console.log(err);
+                                    }
+                                    else {
+                                      console.log(result,"NoPacks");
+                                      sonumberdata = rsult[0]
+                                    }
+                                  });
+
+                                  const getnppacks = sonumberdata ? sonumberdata.NoPacks : 0;
+
+                                  // Update mixnopacks
+                                  connection.query('UPDATE mixnopacks SET NoPacks = ? WHERE ArticleId = ?', [SalesNoPacks, item.article_id], (err, result) => {
+                                    if (err) { console.log(err); }
+                                    else {
+                                      if (sonumberdata && sonumberdata.total > 0) {
+                                        const nopacksadded = getnppacks + NoPacks;
+                                        // Update SO
+                                        connection.query('UPDATE so SET NoPacks = ?, OutwardNoPacks = ?, ArticleRate = ? WHERE SoNumberId = ? AND ArticleId = ?', [nopacksadded, nopacksadded, item.articleRate, SoNumberId, item.article_id]);
+                                      } else {
+                                        // Insert new SO record
+                                        const soadd = {
+                                          SoNumberId: SoNumberId,
+                                          ArticleId: item.article_id,
+                                          NoPacks: NoPacks,
+                                          OutwardNoPacks: NoPacks,
+                                          ArticleRate: item.articleRate,
+                                          created_at: data.Date,
+                                          updated_at: data.Date
+                                        };
+                                        connection.query('INSERT INTO so SET ?', [soadd]);
+                                      }
+                                    }
+                                  });
+                                }
+                              });
+                            } else {
+
+                              let sonumberdata;
+                              let getnppacks;
+                              let NoPacks = '';
+                              let SalesNoPacks = '';
+                              connection.query('SELECT SalesNoPacks FROM inward WHERE ArticleId = ? ', [item.article_id], (err, result) => {
+                                if (err) {
+                                  console.log(err);
+                                }
+                                else {
+                                  console.log(result[0].SalesNoPacks,"pppppppp");
+                                  const search = result[0].SalesNoPacks;
+                                  console.log(search, "0000000");
+                                  const searchString = ',';
+                                  let stringcomma = 0;
+
+                                  if (search.includes(searchString)) {
+                                    const string = search.split(',')
+                                    const nopk=item.Quantity.split(',')
+                                    let arr1 = [];
+                                    string.forEach((item, index) => {
+                                      const result = parseInt(item) - parseInt(nopk[index]);
+                                      arr1.push(result);
+                                      console.log(result, "//////////////////////", index);
+                                    });
+                                    NoPacks += item.Quantity;
+                                    SalesNoPacks = arr1.join(',');
+                                    console.log(SalesNoPacks,"&&&&&&&&&&&&&&");
+                                    stringcomma = 1;
+                                  }
+                                  else{
+                                    NoPacks += item.Quantity;
+                                    SalesNoPacks += (search - item.Quantity);
+                                  }
+
+                                 
+
+                                  NoPacks = NoPacks.replace(/,\s*$/, ''); // Remove trailing comma
+                                  SalesNoPacks = SalesNoPacks.replace(/,\s*$/, ''); // Remove trailing comma
+
+                                  const CheckSalesNoPacks = NoPacks.split(',');
+                                  const tmp = CheckSalesNoPacks.filter((x) => x.trim() !== '');
+
+
+                                  connection.query('SELECT COUNT(*) as total, NoPacks FROM so WHERE SoNumberId = ? AND ArticleId = ?', [SoNumberId, item.article_id], (err, result) => {
+                                    if (err) { console.log(err); }
+                                    else {
+                                      sonumberdata = result[0];
+                                    }
+                                  });
+
+                                  getnppacks = sonumberdata ? sonumberdata.NoPacks : 0;
+                                  connection.query('UPDATE inward SET SalesNoPacks = ? WHERE ArticleId = ?', [SalesNoPacks, item.article_id], (err, result) => {
+                                    if (err) { console.log(err); }
+                                    else {
+                                      console.log("updated inward");
+                                    }
+                                  });
+
+                                  if (sonumberdata && sonumberdata.total > 0) {
+                                    console.log("{}{}{}_+_+_+");
+                                    let nopacksadded = '';
+                                    if (SalesNoPacks.includes(',')) {
+                                      const NoPacks1 = NoPacks.split(',');
+                                      const getnppacksArr = getnppacks.split(',');
+                                      getnppacksArr.forEach((vl, key) => {
+                                        nopacksadded += (parseInt(NoPacks1[key]) + parseInt(vl)) + ',';
+                                      });
+                                    } else {
+                                      nopacksadded += parseInt(getnppacks) + parseInt(NoPacks) + ',';
+                                    }
+                                    nopacksadded = nopacksadded.replace(/,\s*$/, ''); // Remove trailing comma
+
+                                    connection.query('UPDATE so SET NoPacks = ?, OutwardNoPacks = ?, ArticleRate = ? WHERE SoNumberId = ? AND ArticleId = ?', [nopacksadded, nopacksadded, item.articleRate, SoNumberId, item.article_id]);
+                                  } else {
+                                    const soadd = {
+                                      SoNumberId: SoNumberId,
+                                      ArticleId: item.article_id,
+                                      NoPacks: NoPacks,
+                                      OutwardNoPacks: NoPacks,
+                                      ArticleRate: item.articleRate,
+                                      created_at: data.Date,
+                                      updated_at: data.Date
+                                    };
+                                    connection.query('INSERT INTO so SET ?', [soadd], (err, result) => {
+                                      if (err) { console.log(err); }
+                                      else {
+                                        connection.query('UPDATE cart SET status = 1 WHERE article_id = ?', [item.article_id], (err, result) => {
+                                          if (err) {
+                                            console.log(err);
+                                          }
+
+                                        });
+
+                                      }
+                                    });
+                                  }
+                                }
+
+
+                              });
+                            }
+                          } catch (error) {
+                            console.error('Error:', error);
+                            res.status(500).json({ error: 'Internal Server Error' });
+                          }
+                        })
+
+                        res.status(200).json({ status: true })
+
+                      }
+                    }
+                  );
+                }
+              });
+            }
+          });
+        }
+      }
+    );
+  });
+
+
+
+
+}
+function generateSoNumber(UserId, callback) {
+  const array = {};
+  const finYearQuery = 'SELECT Id, CONCAT(StartYear, "-", EndYear) AS CurrentFinancialYear FROM financialyear ORDER BY Id DESC';
+  const soNumberQuery = 'SELECT Id, FinancialYearId, SoNumber FROM sonumber WHERE UserId = ? ORDER BY Id DESC LIMIT 1';
+
+  connection.query(finYearQuery, (err, finYearResult) => {
+    if (err) {
+      console.error('Error retrieving financial year data:', err);
+      callback({});
+    } else {
+      connection.query(soNumberQuery, [UserId], (err, soNumberResult) => {
+        if (err) {
+          console.error('Error retrieving SO number data:', err);
+          callback({});
+        } else {
+          if (soNumberResult.length > 0) {
+            if (finYearResult[0].Id > soNumberResult[0].FinancialYearId) {
+              array.SO_Number = 1;
+              array.SO_Number_Financial_Id = finYearResult[0].Id;
+              array.SO_Number_Financial = `1/${finYearResult[0].CurrentFinancialYear}`;
+              callback(array);
+            } else {
+              const soNumberString = soNumberResult[0].SoNumber;
+              const soNumber = parseInt(soNumberString);
+              array.SO_Number = soNumber + 1;
+              array.SO_Number_Financial_Id = finYearResult[0].Id;
+              array.SO_Number_Financial = `${soNumber + 1}/${finYearResult[0].CurrentFinancialYear}`;
+              callback(array);
+            }
+          } else {
+            array.SO_Number = 1;
+            array.SO_Number_Financial_Id = finYearResult[0].Id;
+            array.SO_Number_Financial = `1/${finYearResult[0].CurrentFinancialYear}`;
+            callback(array);
+          }
+        }
+      });
     }
   });
-};
+}
 
-exports.trans = (req, res) => {
-  const query = `SELECT Name, Id from transportation`;
+exports.SendMail = async (req, res) => {
+  const { username, email, subject, message } = req.body;
 
-  connection.query(query, (error, results) => {
-    if (error) {
-      console.error("Error executing query", error);
-      res.status(500).json({ error: "Failed to retrive data from database" });
-    } else {
-      res.status(200).json(results);
-    }
-  });
-};
+  try {
+    // Create a transporter for sending emails
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: 'developersweb001@gmail.com',
+        pass: 'jbibkrpdwsfmpwkw'
+      }
+    });
+
+    // Define email content
+    const mailOptions = {
+      from: email,
+      to: 'nitinrathod.syndell@gmail.com',
+      subject: subject,
+      text: `Name: ${username}\nEmail: ${email}\nSubject:${subject}\nMessage: ${message}`
+    };
+
+    // Send the email
+    const info = await transporter.sendMail(mailOptions);
+    // console.log('Email sent:', info);
+
+    res.status(200).json('sent');
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+}
+
+
 
 exports.phoneNumberValidation = (req, res) => {
   const { number } = req.body;
@@ -924,3 +1321,4 @@ exports.UserData = (req, res) => {
     }
   );
 };
+
