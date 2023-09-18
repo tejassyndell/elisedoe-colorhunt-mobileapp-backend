@@ -4,6 +4,23 @@ const { json } = require("body-parser");
 const connection = require("../database/database.js");
 const multer = require("multer");
 const nodemailer = require('nodemailer');
+const bodyParser = require('body-parser');
+const { Expo } = require('expo-server-sdk');
+const express = require('express');
+
+const app = express();
+
+app.use(bodyParser.json());
+
+// Create an Expo client
+const expo = new Expo();
+
+// Replace with your Firebase Admin setup code (initialize Firebase)
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 //image upload function
 const imgconfig = multer.diskStorage({
@@ -1353,3 +1370,29 @@ exports.CollectInwardForCartArticals = async (req, res) => {
   }
 };
 
+exports.getNotification= async (req, res) => {
+  const { registrationToken, title, body } = req.body;
+  console.log(registrationToken,title,body);
+console.log(registrationToken);
+  if (!Expo.isExpoPushToken(registrationToken)) {
+    return res.status(400).json({ error: 'Invalid Expo Push Token' });
+  }
+
+  const message = {
+   to: registrationToken,
+  sound: 'default',
+  title: title || 'Notification Title',
+  body: body || 'Notification Body',
+  priority: 'high', // Set notification priority to high
+  data: { additionalData: 'optional data' }, // Add any additional data here
+  };
+
+  try {
+    const response = await expo.sendPushNotificationsAsync([message]);
+    console.log('Notification sent successfully:', response);
+    res.status(200).json({ message: 'Notification sent successfully' });
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
