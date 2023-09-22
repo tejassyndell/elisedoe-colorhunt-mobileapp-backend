@@ -46,7 +46,7 @@ const upload = multer({
 //Full Article data
 exports.getAllArticles = async (req, res) => {
   const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 100";
+    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 50";
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -1285,8 +1285,6 @@ exports.SendMail = async (req, res) => {
   }
 }
 
-
-
 exports.phoneNumberValidation = (req, res) => {
   const { number } = req.body;
   console.log(number);
@@ -1345,7 +1343,7 @@ exports.CollectInwardForCartArticals = async (req, res) => {
     console.log(arr1);
     let arr2 = [];
     const q1 = 'SELECT SalesNoPacks , ArticleId FROM inward WHERE ArticleId = ?';
-    
+
     // Assuming cartDataIdArray contains the item IDs you want to query
 
     // Use Promise.all to execute all queries in parallel
@@ -1361,7 +1359,7 @@ exports.CollectInwardForCartArticals = async (req, res) => {
       });
       arr2.push(result[0]);
     }));
-    
+
     // Send arr2 as a response or perform other actions as needed
     res.status(200).json({ data: arr2 });
   } catch (error) {
@@ -1370,21 +1368,21 @@ exports.CollectInwardForCartArticals = async (req, res) => {
   }
 };
 
-exports.getNotification= async (req, res) => {
+exports.getNotification = async (req, res) => {
   const { registrationToken, title, body } = req.body;
-  console.log(registrationToken,title,body);
-console.log(registrationToken);
+  console.log(registrationToken, title, body);
+  console.log(registrationToken);
   if (!Expo.isExpoPushToken(registrationToken)) {
     return res.status(400).json({ error: 'Invalid Expo Push Token' });
   }
 
   const message = {
-   to: registrationToken,
-  sound: 'default',
-  title: title || 'Notification Title',
-  body: body || 'Notification Body',
-  priority: 'high', // Set notification priority to high
-  data: { additionalData: 'optional data' }, // Add any additional data here
+    to: registrationToken,
+    sound: 'default',
+    title: title || 'Notification Title',
+    body: body || 'Notification Body',
+    priority: 'high', // Set notification priority to high
+    data: { additionalData: 'optional data' }, // Add any additional data here
   };
 
   try {
@@ -1396,3 +1394,53 @@ console.log(registrationToken);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+
+exports.getSoNumber = async (req, res) => {
+  console.log("So Number");
+  try {
+    const { PartyId } = req.body;
+    console.log(PartyId);
+    const q1 = 'SELECT * FROM sonumber WHERE PartyId = ?';
+    connection.query(q1, [PartyId], (err, resulte) => {
+      if (err) {
+        res.status(500).json(err);
+      } else {
+        const q2 = `SELECT so.SoNumberId
+        FROM outward AS o
+        INNER JOIN outwardnumber AS onum ON o.OutwardNumberId = onum.id
+        INNER JOIN so AS so ON onum.SoId = so.id
+        WHERE o.PartyId = ?`;
+        connection.query(q2, [PartyId], (err, response) => {
+          if (err) {
+            res.status(500).json(err);
+          } else {
+            // Use a Set to remove duplicates from the response array
+            const uniqueSoNumberIds = new Set();
+
+            // Use filter to keep only the first occurrence of each SoNumberId
+            const uniqueArray = response.filter(item => {
+              if (!uniqueSoNumberIds.has(item.SoNumberId)) {
+                uniqueSoNumberIds.add(item.SoNumberId);
+                return true;
+              }
+              return false;
+            });
+
+            const combinedData = resulte.map(item => ({
+              ...item,
+              status: uniqueArray.some(obj => obj.SoNumberId === item.Id) ? 1 : 0,
+            }));
+            // const filteredData = combinedData.filter(item => item.status === 1);
+            console.log(combinedData);
+            res.status(200).json(combinedData);
+          }
+        });
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+};
+
+

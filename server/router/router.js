@@ -23,7 +23,8 @@ const {
   addso,
   phoneNumberValidation,
   UserData,
-  CollectInwardForCartArticals,getNotification
+  CollectInwardForCartArticals,getNotification,
+  getSoNumber
 } = require("../controller/controllerM2.js");
 
 Routes.get("/getAllArticles", getAllArticles);
@@ -50,5 +51,5 @@ Routes.post("/phoneNumberValidation", phoneNumberValidation);
 Routes.post("/UserData", UserData);
 Routes.post("/collectinwardforcartarticals", CollectInwardForCartArticals);
 Routes.post("/getNotification", getNotification);
-
+Routes.post("/getsonumber",getSoNumber);
 module.exports = Routes;
