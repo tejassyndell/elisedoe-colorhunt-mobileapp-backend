@@ -1468,7 +1468,7 @@ exports.getSoNumber = async (req, res) => {
             });
             
             // const filteredData = combinedData.filter(item => item.status === 1);
-            console.log(combinedData);
+            // console.log(combinedData);
             res.status(200).json(combinedData);
           }
         });
