@@ -1400,14 +1400,14 @@ exports.getSoNumber = async (req, res) => {
   try {
     const { PartyId } = req.body;
     console.log(PartyId);
-    const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ?';
+    const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate , sn.Remarks FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ?';
     connection.query(q1, [PartyId], (err, resulte) => {
       if (err) {
         res.status(500).json(err);
       } else {
         const transformedResults = resulte.reduce((acc, row) => {
           const existingEntry = acc.find(entry => entry.Id === row.Id);
-    
+
           if (existingEntry) {
             // Add to existing entry's arrays
             existingEntry.OutwardNoPacks.push(row.OutwardNoPacks);
@@ -1420,7 +1420,7 @@ exports.getSoNumber = async (req, res) => {
               ArticleRate: [row.ArticleRate],
             });
           }
-    
+
           return acc;
         }, []);
         // console.log(transformedResults);
@@ -1435,7 +1435,7 @@ exports.getSoNumber = async (req, res) => {
           if (err) {
             res.status(500).json(err);
           } else {
-            
+
             // Use a Set to remove duplicates from the response array
             const uniqueSoNumberIds = new Set();
             // Use filter to keep only the first occurrence of each SoNumberId
@@ -1450,7 +1450,7 @@ exports.getSoNumber = async (req, res) => {
             const combinedData = transformedResults.map(item => {
               // Find the corresponding unique item in uniqueArray based on SoNumberId
               const matchingItem = uniqueArray.find(obj => obj.SoNumberId === item.Id);
-            
+
               // Check if a matching item was found
               if (matchingItem) {
                 return {
@@ -1466,7 +1466,7 @@ exports.getSoNumber = async (req, res) => {
                 };
               }
             });
-            
+
             // const filteredData = combinedData.filter(item => item.status === 1);
             // console.log(combinedData);
             res.status(200).json(combinedData);
@@ -1479,5 +1479,43 @@ exports.getSoNumber = async (req, res) => {
     res.status(500).json({ error: 'An error occurred' });
   }
 };
+exports.getsoarticledetails = (req, resp) => {
+  const { sonumber, party_id, CreatedDate } = req.body;
 
+  // MySQL query
+  const query = `
+    SELECT
+      s.Id,
+      sn.Id AS SoId,
+      sn.ArticleId,
+      sn.OutwardNoPacks,
+      sn.ArticleRate,
+      a.ArticleColor,
+      a.ArticleSize,
+      a.ArticleNumber,
+      a.CategoryId,
+      c.Title
+    FROM sonumber AS s
+    INNER JOIN so AS sn ON s.Id = sn.SoNumberId 
+    INNER JOIN article AS a ON a.Id = sn.ArticleId
+    INNER JOIN category AS c ON c.Id = a.CategoryId
+    WHERE s.SoNumber = ? AND s.PartyId = ? AND s.CreatedDate = ? 
+  `;
+
+  // Execute the query
+  connection.query(query, [sonumber, party_id, CreatedDate], (error, results) => {
+    if (error) {
+      console.error(error);
+      return resp.status(500).json({ error: 'Internal server error' });
+    }
+
+    if (results.length === 0) {
+      return resp.status(404).json({ error: 'SO not found' });
+    }
+
+
+    resp.status(200).json(results);
+
+  });
+};
 

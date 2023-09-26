@@ -24,7 +24,8 @@ const {
   phoneNumberValidation,
   UserData,
   CollectInwardForCartArticals,getNotification,
-  getSoNumber
+  getSoNumber,
+  getsoarticledetails
 } = require("../controller/controllerM2.js");
 
 Routes.get("/getAllArticles", getAllArticles);
@@ -52,4 +53,6 @@ Routes.post("/UserData", UserData);
 Routes.post("/collectinwardforcartarticals", CollectInwardForCartArticals);
 Routes.post("/getNotification", getNotification);
 Routes.post("/getsonumber",getSoNumber);
+Routes.post("/getsoarticledetails",getsoarticledetails);
+
 module.exports = Routes;
