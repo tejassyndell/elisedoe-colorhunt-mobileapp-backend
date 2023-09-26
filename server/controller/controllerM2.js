@@ -897,7 +897,7 @@ exports.getCartArticleDetails = async (req, res) => {
 
 //category with photos 
 exports.getcategorywithphotos = (req, res) => {
-  const query = "SELECT Title as Category from category";
+  const query = "SELECT Title as Category, Image as Photos from category";
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
