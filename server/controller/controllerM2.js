@@ -4,6 +4,23 @@ const { json } = require("body-parser");
 const connection = require("../database/database.js");
 const multer = require("multer");
 const nodemailer = require('nodemailer');
+const bodyParser = require('body-parser');
+const { Expo } = require('expo-server-sdk');
+const express = require('express');
+
+const app = express();
+
+app.use(bodyParser.json());
+
+// Create an Expo client
+const expo = new Expo();
+
+// Replace with your Firebase Admin setup code (initialize Firebase)
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 //image upload function
 const imgconfig = multer.diskStorage({
@@ -29,7 +46,7 @@ const upload = multer({
 //Full Article data
 exports.getAllArticles = async (req, res) => {
   const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 100";
+    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 50";
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -880,7 +897,7 @@ exports.getCartArticleDetails = async (req, res) => {
 
 //category with photos 
 exports.getcategorywithphotos = (req, res) => {
-  const query = "SELECT Title as Category from category";
+  const query = "SELECT Title as Category, Image as Photos from category";
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
@@ -1026,8 +1043,8 @@ exports.addso = (req, res) => {
                               connection.query('SELECT * FROM mixnopacks WHERE ArticleId = ?', [item.article_id], (err, result) => {
                                 if (err) { console.log(err) }
                                 else {
-                                  console.log(result,"mixnopacks");
-                                   mixnopacks = result[0];
+                                  console.log(result, "mixnopacks");
+                                  mixnopacks = result[0];
                                   NoPacks = item.Quantity;
                                   SalesNoPacks = mixnopacks.NoPacks - item.Quantity;
                                   let sonumberdata;
@@ -1036,7 +1053,7 @@ exports.addso = (req, res) => {
                                       console.log(err);
                                     }
                                     else {
-                                      console.log(result,"NoPacks");
+                                      console.log(result, "NoPacks");
                                       sonumberdata = rsult[0]
                                     }
                                   });
@@ -1079,7 +1096,7 @@ exports.addso = (req, res) => {
                                   console.log(err);
                                 }
                                 else {
-                                  console.log(result[0].SalesNoPacks,"pppppppp");
+                                  console.log(result[0].SalesNoPacks, "pppppppp");
                                   const search = result[0].SalesNoPacks;
                                   console.log(search, "0000000");
                                   const searchString = ',';
@@ -1087,7 +1104,7 @@ exports.addso = (req, res) => {
 
                                   if (search.includes(searchString)) {
                                     const string = search.split(',')
-                                    const nopk=item.Quantity.split(',')
+                                    const nopk = item.Quantity.split(',')
                                     let arr1 = [];
                                     string.forEach((item, index) => {
                                       const result = parseInt(item) - parseInt(nopk[index]);
@@ -1096,15 +1113,15 @@ exports.addso = (req, res) => {
                                     });
                                     NoPacks += item.Quantity;
                                     SalesNoPacks = arr1.join(',');
-                                    console.log(SalesNoPacks,"&&&&&&&&&&&&&&");
+                                    console.log(SalesNoPacks, "&&&&&&&&&&&&&&");
                                     stringcomma = 1;
                                   }
-                                  else{
+                                  else {
                                     NoPacks += item.Quantity;
                                     SalesNoPacks += (search - item.Quantity);
                                   }
 
-                                 
+
 
                                   NoPacks = NoPacks.replace(/,\s*$/, ''); // Remove trailing comma
                                   SalesNoPacks = SalesNoPacks.replace(/,\s*$/, ''); // Remove trailing comma
@@ -1268,8 +1285,6 @@ exports.SendMail = async (req, res) => {
   }
 }
 
-
-
 exports.phoneNumberValidation = (req, res) => {
   const { number } = req.body;
   console.log(number);
@@ -1321,4 +1336,148 @@ exports.UserData = (req, res) => {
     }
   );
 };
+
+exports.CollectInwardForCartArticals = async (req, res) => {
+  try {
+    const { arr1 } = req.body;
+    console.log(arr1);
+    let arr2 = [];
+    const q1 = 'SELECT SalesNoPacks , ArticleId FROM inward WHERE ArticleId = ?';
+
+    // Assuming cartDataIdArray contains the item IDs you want to query
+
+    // Use Promise.all to execute all queries in parallel
+    await Promise.all(arr1.map(async (item) => {
+      const result = await new Promise((resolve, reject) => {
+        connection.query(q1, [item], (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
+        });
+      });
+      arr2.push(result[0]);
+    }));
+
+    // Send arr2 as a response or perform other actions as needed
+    res.status(200).json({ data: arr2 });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+};
+
+exports.getNotification = async (req, res) => {
+  const { registrationToken, title, body } = req.body;
+  console.log(registrationToken, title, body);
+  console.log(registrationToken);
+  if (!Expo.isExpoPushToken(registrationToken)) {
+    return res.status(400).json({ error: 'Invalid Expo Push Token' });
+  }
+
+  const message = {
+    to: registrationToken,
+    sound: 'default',
+    title: title || 'Notification Title',
+    body: body || 'Notification Body',
+    priority: 'high', // Set notification priority to high
+    data: { additionalData: 'optional data' }, // Add any additional data here
+  };
+
+  try {
+    const response = await expo.sendPushNotificationsAsync([message]);
+    console.log('Notification sent successfully:', response);
+    res.status(200).json({ message: 'Notification sent successfully' });
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+exports.getSoNumber = async (req, res) => {
+  console.log("So Number");
+  try {
+    const { PartyId } = req.body;
+    console.log(PartyId);
+    const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ?';
+    connection.query(q1, [PartyId], (err, resulte) => {
+      if (err) {
+        res.status(500).json(err);
+      } else {
+        const transformedResults = resulte.reduce((acc, row) => {
+          const existingEntry = acc.find(entry => entry.Id === row.Id);
+    
+          if (existingEntry) {
+            // Add to existing entry's arrays
+            existingEntry.OutwardNoPacks.push(row.OutwardNoPacks);
+            existingEntry.ArticleRate.push(row.ArticleRate);
+          } else {
+            // Create a new entry with arrays
+            acc.push({
+              ...row,
+              OutwardNoPacks: [row.OutwardNoPacks],
+              ArticleRate: [row.ArticleRate],
+            });
+          }
+    
+          return acc;
+        }, []);
+        // console.log(transformedResults);
+        const q2 = `
+        SELECT so.SoNumberId , onum.OutwardNumber
+        FROM outward AS o
+        INNER JOIN outwardnumber AS onum ON o.OutwardNumberId = onum.id
+        INNER JOIN so AS so ON onum.SoId = so.id
+        WHERE o.PartyId = ?
+      `;
+        connection.query(q2, [PartyId], (err, response) => {
+          if (err) {
+            res.status(500).json(err);
+          } else {
+            
+            // Use a Set to remove duplicates from the response array
+            const uniqueSoNumberIds = new Set();
+            // Use filter to keep only the first occurrence of each SoNumberId
+            const uniqueArray = response.filter(item => {
+              if (!uniqueSoNumberIds.has(item.SoNumberId)) {
+                uniqueSoNumberIds.add(item.SoNumberId);
+                return true;
+              }
+              return false;
+            });
+            // console.log(uniqueArray);
+            const combinedData = transformedResults.map(item => {
+              // Find the corresponding unique item in uniqueArray based on SoNumberId
+              const matchingItem = uniqueArray.find(obj => obj.SoNumberId === item.Id);
+            
+              // Check if a matching item was found
+              if (matchingItem) {
+                return {
+                  ...item,
+                  status: 1,
+                  OutwardNumber: matchingItem.OutwardNumber,
+                };
+              } else {
+                return {
+                  ...item,
+                  status: 0,
+                  OutwardNumber: '', // Set an empty string if no matching item is found
+                };
+              }
+            });
+            
+            // const filteredData = combinedData.filter(item => item.status === 1);
+            // console.log(combinedData);
+            res.status(200).json(combinedData);
+          }
+        });
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+};
+
 
