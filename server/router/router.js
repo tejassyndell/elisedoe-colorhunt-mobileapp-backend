@@ -2,6 +2,7 @@
 const express = require("express");
 const Routes = express.Router();
 const {
+  createAccount,
   getAllArticles,
   getCategories,
   getParty,
@@ -17,10 +18,14 @@ const {
   getCartArticleDetails,
   getcategorywithphotos,
   transportationdropdowns,
-  checkPhone,
-  SendMail
+  SendMail,findfromthecart,
+  updateCartArticale,
+  addso,
+  phoneNumberValidation,
+  UserData,
+  CollectInwardForCartArticals,getNotification,
+  getSoNumber
 } = require("../controller/controllerM2.js");
-
 
 Routes.get("/getAllArticles", getAllArticles);
 Routes.get("/getCategories", getCategories);
@@ -32,12 +37,19 @@ Routes.post("/deletewishlist", deletewishlist);
 Routes.post("/articledetails", articledetails);
 Routes.post("/orderdetails", orderdetails);
 Routes.post("/addtocart", addtocart);
+Routes.post("/findfromthecart",findfromthecart);
+Routes.post("/updateCartArticale",updateCartArticale);
 Routes.post("/cartdetails", cartdetails);
 Routes.post("/deletecartitem",deletecartitem);
 Routes.post("/getCartArticleDetails",getCartArticleDetails)
 Routes.get("/getcategorywithphotos",getcategorywithphotos)
 Routes.get("/gettransportation",transportationdropdowns)
-Routes.post("/checkPhone",checkPhone)
-//for contact-us
+Routes.post("/addso",addso);
 Routes.post('/SendMail',SendMail)
+Routes.post("/createAccount", createAccount);
+Routes.post("/phoneNumberValidation", phoneNumberValidation);
+Routes.post("/UserData", UserData);
+Routes.post("/collectinwardforcartarticals", CollectInwardForCartArticals);
+Routes.post("/getNotification", getNotification);
+Routes.post("/getsonumber",getSoNumber);
 module.exports = Routes;
