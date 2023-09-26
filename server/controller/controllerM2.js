@@ -1400,7 +1400,7 @@ exports.getSoNumber = async (req, res) => {
   try {
     const { PartyId } = req.body;
     console.log(PartyId);
-    const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate , sn.Remarks FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ?';
+    const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate , sn.Remarks FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ? ORDER BY sn.CreatedDate DESC';
     connection.query(q1, [PartyId], (err, resulte) => {
       if (err) {
         res.status(500).json(err);
