@@ -1400,23 +1400,44 @@ exports.getSoNumber = async (req, res) => {
   try {
     const { PartyId } = req.body;
     console.log(PartyId);
-    const q1 = 'SELECT * FROM sonumber WHERE PartyId = ?';
+    const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ?';
     connection.query(q1, [PartyId], (err, resulte) => {
       if (err) {
         res.status(500).json(err);
       } else {
-        const q2 = `SELECT so.SoNumberId
+        const transformedResults = resulte.reduce((acc, row) => {
+          const existingEntry = acc.find(entry => entry.Id === row.Id);
+    
+          if (existingEntry) {
+            // Add to existing entry's arrays
+            existingEntry.OutwardNoPacks.push(row.OutwardNoPacks);
+            existingEntry.ArticleRate.push(row.ArticleRate);
+          } else {
+            // Create a new entry with arrays
+            acc.push({
+              ...row,
+              OutwardNoPacks: [row.OutwardNoPacks],
+              ArticleRate: [row.ArticleRate],
+            });
+          }
+    
+          return acc;
+        }, []);
+        // console.log(transformedResults);
+        const q2 = `
+        SELECT so.SoNumberId , onum.OutwardNumber
         FROM outward AS o
         INNER JOIN outwardnumber AS onum ON o.OutwardNumberId = onum.id
         INNER JOIN so AS so ON onum.SoId = so.id
-        WHERE o.PartyId = ?`;
+        WHERE o.PartyId = ?
+      `;
         connection.query(q2, [PartyId], (err, response) => {
           if (err) {
             res.status(500).json(err);
           } else {
+            
             // Use a Set to remove duplicates from the response array
             const uniqueSoNumberIds = new Set();
-
             // Use filter to keep only the first occurrence of each SoNumberId
             const uniqueArray = response.filter(item => {
               if (!uniqueSoNumberIds.has(item.SoNumberId)) {
@@ -1425,13 +1446,29 @@ exports.getSoNumber = async (req, res) => {
               }
               return false;
             });
-
-            const combinedData = resulte.map(item => ({
-              ...item,
-              status: uniqueArray.some(obj => obj.SoNumberId === item.Id) ? 1 : 0,
-            }));
+            // console.log(uniqueArray);
+            const combinedData = transformedResults.map(item => {
+              // Find the corresponding unique item in uniqueArray based on SoNumberId
+              const matchingItem = uniqueArray.find(obj => obj.SoNumberId === item.Id);
+            
+              // Check if a matching item was found
+              if (matchingItem) {
+                return {
+                  ...item,
+                  status: 1,
+                  OutwardNumber: matchingItem.OutwardNumber,
+                };
+              } else {
+                return {
+                  ...item,
+                  status: 0,
+                  OutwardNumber: '', // Set an empty string if no matching item is found
+                };
+              }
+            });
+            
             // const filteredData = combinedData.filter(item => item.status === 1);
-            console.log(combinedData);
+            // console.log(combinedData);
             res.status(200).json(combinedData);
           }
         });
