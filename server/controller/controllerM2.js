@@ -46,7 +46,7 @@ const upload = multer({
 //Full Article data
 exports.getAllArticles = async (req, res) => {
   const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 50";
+    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 20";
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -1288,7 +1288,7 @@ exports.SendMail = async (req, res) => {
 exports.phoneNumberValidation = (req, res) => {
   const { number } = req.body;
   console.log(number);
-  const query = `SELECT  Id , Name, UserId ,PhoneNumber,Additional_phone_numbers,Address,City,State,PinCode,Country from party WHERE PhoneNumber = ? OR Additional_phone_numbers LIKE ?`;
+  const query = `SELECT  Id , Name, UserId ,PhoneNumber,Additional_phone_numbers,Address,City,State,PinCode,Country,token from party WHERE PhoneNumber = ? OR Additional_phone_numbers LIKE ?`;
   const numberPattern = `%${number}%`;
   connection.query(query, [number, numberPattern], (error, results) => {
     if (error) {
@@ -1314,17 +1314,18 @@ exports.UserData = (req, res) => {
     country,
     pinCode,
     contactPerson,
+    token
   } = req.body;
 
   const insertQuery = `
     INSERT INTO party
-    (Name, Address, PhoneNumber, State, City, Country, PinCode, ContactPerson, Status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+    (Name, Address, PhoneNumber, State, City, Country, PinCode, ContactPerson, Status, token)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
   `;
 
   connection.query(
     insertQuery,
-    [name, address, phoneNumber, state, city, country, pinCode, contactPerson],
+    [name, address, phoneNumber, state, city, country, pinCode, contactPerson, token],
     (err, result) => {
       if (err) {
         console.error("Error inserting data:", err);
@@ -1481,7 +1482,6 @@ exports.getSoNumber = async (req, res) => {
 };
 exports.getsoarticledetails = (req, resp) => {
   const { sonumber, party_id, CreatedDate } = req.body;
-
   // MySQL query
   const query = `
     SELECT
@@ -1510,6 +1510,7 @@ exports.getsoarticledetails = (req, resp) => {
     }
 
     if (results.length === 0) {
+      console.log();
       return resp.status(404).json({ error: 'SO not found' });
     }
 
@@ -1519,3 +1520,18 @@ exports.getsoarticledetails = (req, resp) => {
   });
 };
 
+exports.udatepartytoken = async (req, resp) => {
+  const { token, party_id } = req.body;
+  const updateQuery = 'UPDATE party SET token = ? WHERE Id = ?';
+  connection.query(updateQuery, [token, party_id], (error, results) => {
+    if (error) {
+      console.error(error);
+      return resp.status(500).json({ error: 'Internal server error' });
+    }
+    else {
+      console.log(results);
+      resp.status(200).json(results);
+    }
+  });
+
+}

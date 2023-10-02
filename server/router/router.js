@@ -25,7 +25,8 @@ const {
   UserData,
   CollectInwardForCartArticals,getNotification,
   getSoNumber,
-  getsoarticledetails
+  getsoarticledetails,
+  udatepartytoken
 } = require("../controller/controllerM2.js");
 
 Routes.get("/getAllArticles", getAllArticles);
@@ -54,5 +55,6 @@ Routes.post("/collectinwardforcartarticals", CollectInwardForCartArticals);
 Routes.post("/getNotification", getNotification);
 Routes.post("/getsonumber",getSoNumber);
 Routes.post("/getsoarticledetails",getsoarticledetails);
+Routes.post("/udatepartytoken",udatepartytoken);
 
 module.exports = Routes;
