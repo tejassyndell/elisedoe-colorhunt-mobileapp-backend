@@ -732,7 +732,7 @@ exports.updateCartArticale = (req, res) => {
 
 //getcartdetails api
 exports.cartdetails = (req, res) => {
-  const {party_id} = req.body;
+  const { party_id } = req.body;
   const query = `SELECT ArticleNumber,ArticleColor,ArticleOpenFlag, StyleDescription, article_id, ar.articleRate, rate, (SELECT ap.Name FROM articlephotos ap WHERE ap.ArticlesId = a.Id LIMIT 1) as Photos , Quantity FROM cart INNER JOIN article a ON cart.article_id = a.Id INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id = ${party_id} AND status = 0`;
   connection.query(query, (error, results) => {
     if (error) {
@@ -1401,7 +1401,15 @@ exports.getSoNumber = async (req, res) => {
   try {
     const { PartyId } = req.body;
     console.log(PartyId);
-    const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate , sn.Remarks ,sn.Transporter FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ? ORDER BY sn.CreatedDate DESC';
+    // const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate , sn.Remarks ,sn.Transporter,sn.UserId FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ? ORDER BY sn.CreatedDate DESC';
+    const q1 =
+  'SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear ' +
+  'FROM sonumber sn ' +
+  'LEFT JOIN so so ON sn.id = so.SoNumberId ' +
+  'LEFT JOIN users u ON sn.UserId = u.Id ' + // Assuming the user's name column is named 'Name'
+  'LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id ' + // Assuming the FinancialYearId column in 'sonumber' maps to 'Id' in 'financialyear'
+  'WHERE sn.PartyId = ? ' +
+  'ORDER BY sn.CreatedDate DESC';
     connection.query(q1, [PartyId], (err, resulte) => {
       if (err) {
         res.status(500).json(err);
