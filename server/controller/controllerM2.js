@@ -45,19 +45,7 @@ const upload = multer({
 
 //Full Article data
 exports.getAllArticles = async (req, res) => {
-  const query = `SELECT 
-    a.Id, 
-    a.ArticleNumber, 
-    a.StyleDescription, 
-    ar.ArticleRate, 
-    ap.Name AS Photos, 
-    c.Title AS Category, 
-    sc.Name AS Subcategory 
-    FROM 
-    article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId 
-    INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId 
-    INNER JOIN category AS c ON a.CategoryId = c.Id 
-    INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber`;
+  const query = `SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a LEFT JOIN articlerate AS ar ON a.Id = ar.ArticleId LEFT JOIN articlephotos AS ap ON a.Id = ap.ArticlesId LEFT JOIN category AS c ON a.CategoryId = c.Id LEFT JOIN subcategory AS sc ON a.SubCategoryId = sc.Id WHERE ar.ArticleRate IS NOT NULL AND ar.ArticleRate IS NOT NULL GROUP BY a.ArticleNumber ORDER BY ar.ArticleRate ASC;`;
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -65,25 +53,23 @@ exports.getAllArticles = async (req, res) => {
       res.status(210).json("error");
       return;
     } else {
-      // Initialize an array to store the transformed data
-      const transformedData = [];
-
-      // Iterate through the productData array
-      productData.forEach((item) => {
-        // Parse the 'Photos' property and extract the 'photo' value
+      const outputArray = productData.map((item) => {
         const photos = JSON.parse(item.Photos);
-
-        // Create a new object for each 'photo' value
-        photos.forEach((photo) => {
-          const newItem = {
-            ...item,
-            Photos: photo.photo,
-          };
-          transformedData.push(newItem);
-        });
+        let firstPhoto;
+        if (photos) {
+        
+          firstPhoto = photos.length > 0 ? photos[0].photo : "";
+        }
+        else {
+          firstPhoto = ["demo.png"];
+        }
+        return {
+          ...item,
+          Photos: firstPhoto
+        };
       });
 
-      res.status(200).json(transformedData);
+      res.status(200).json(outputArray);
     }
   });
 };
@@ -333,7 +319,6 @@ exports.articledetails = async (req, res) => {
               record.ArticleRate += outletArticleRateValue;
             }
           }
-          console.log(data);
           return data;
         } else {
           const mixNoPacksQuery = `SELECT mxp.NoPacks, a.ArticleNumber, c.Title AS Category, ar.ArticleRate, a.ArticleOpenFlag
@@ -348,7 +333,6 @@ exports.articledetails = async (req, res) => {
             record.NoPacks = TotalRemaining;
             record.ArticleRate += outletArticleRateValue;
           }
-          console.log(data);
           return data;
         }
       } catch (error) {
@@ -371,11 +355,11 @@ exports.articledetails = async (req, res) => {
     if (photosResult.length === 0) {
       return res.status(404).json({ error: "Article not found" });
     }
-    else{
+    else {
       console.log(photosResult);
     }
 
-    const getphotodata = (item)=>{
+    const getphotodata = (item) => {
       const photos = JSON.parse(item);
       return photos.map((photoObj) => photoObj.photo);
     }
@@ -383,11 +367,7 @@ exports.articledetails = async (req, res) => {
       ...photosResult[0],
       photos: photosResult[0].photos ? getphotodata(photosResult[0].photos) : [],
     };
-    console.log(formattedResult,"{}{}{}{}{}{}");
 
-    // const outputArray = inputArray.map((item) => {
-      
-    // });
     // Merge the calculated data into the formatted result
     formattedResult.calculatedData = calculatedData;
 
@@ -1447,13 +1427,13 @@ exports.getSoNumber = async (req, res) => {
     console.log(PartyId);
     // const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate , sn.Remarks ,sn.Transporter,sn.UserId FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ? ORDER BY sn.CreatedDate DESC';
     const q1 =
-  'SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear ' +
-  'FROM sonumber sn ' +
-  'LEFT JOIN so so ON sn.id = so.SoNumberId ' +
-  'LEFT JOIN users u ON sn.UserId = u.Id ' + // Assuming the user's name column is named 'Name'
-  'LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id ' + // Assuming the FinancialYearId column in 'sonumber' maps to 'Id' in 'financialyear'
-  'WHERE sn.PartyId = ? ' +
-  'ORDER BY sn.CreatedDate DESC';
+      'SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear ' +
+      'FROM sonumber sn ' +
+      'LEFT JOIN so so ON sn.id = so.SoNumberId ' +
+      'LEFT JOIN users u ON sn.UserId = u.Id ' + // Assuming the user's name column is named 'Name'
+      'LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id ' + // Assuming the FinancialYearId column in 'sonumber' maps to 'Id' in 'financialyear'
+      'WHERE sn.PartyId = ? ' +
+      'ORDER BY sn.CreatedDate DESC';
     connection.query(q1, [PartyId], (err, resulte) => {
       if (err) {
         res.status(500).json(err);
