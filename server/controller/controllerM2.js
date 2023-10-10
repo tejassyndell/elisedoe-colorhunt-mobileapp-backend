@@ -45,8 +45,19 @@ const upload = multer({
 
 //Full Article data
 exports.getAllArticles = async (req, res) => {
-  const query =
-    "SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId INNER JOIN category AS c ON a.CategoryId = c.Id INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber LIMIT 100";
+  const query = `SELECT 
+    a.Id, 
+    a.ArticleNumber, 
+    a.StyleDescription, 
+    ar.ArticleRate, 
+    ap.Name AS Photos, 
+    c.Title AS Category, 
+    sc.Name AS Subcategory 
+    FROM 
+    article AS a INNER JOIN articlerate AS ar ON a.Id = ar.ArticleId 
+    INNER JOIN articlephotos AS ap ON a.Id = ap.ArticlesId 
+    INNER JOIN category AS c ON a.CategoryId = c.Id 
+    INNER JOIN subcategory AS sc ON a.SubCategoryId = sc.Id GROUP BY a.ArticleNumber`;
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -54,10 +65,30 @@ exports.getAllArticles = async (req, res) => {
       res.status(210).json("error");
       return;
     } else {
-      res.status(200).json(productData);
+      // Initialize an array to store the transformed data
+      const transformedData = [];
+
+      // Iterate through the productData array
+      productData.forEach((item) => {
+        // Parse the 'Photos' property and extract the 'photo' value
+        const photos = JSON.parse(item.Photos);
+
+        // Create a new object for each 'photo' value
+        photos.forEach((photo) => {
+          const newItem = {
+            ...item,
+            Photos: photo.photo,
+          };
+          transformedData.push(newItem);
+        });
+      });
+
+      res.status(200).json(transformedData);
     }
   });
 };
+
+
 
 //createAccount
 exports.createAccount = async (req, res) => {
@@ -302,6 +333,7 @@ exports.articledetails = async (req, res) => {
               record.ArticleRate += outletArticleRateValue;
             }
           }
+          console.log(data);
           return data;
         } else {
           const mixNoPacksQuery = `SELECT mxp.NoPacks, a.ArticleNumber, c.Title AS Category, ar.ArticleRate, a.ArticleOpenFlag
@@ -316,6 +348,7 @@ exports.articledetails = async (req, res) => {
             record.NoPacks = TotalRemaining;
             record.ArticleRate += outletArticleRateValue;
           }
+          console.log(data);
           return data;
         }
       } catch (error) {
@@ -338,12 +371,23 @@ exports.articledetails = async (req, res) => {
     if (photosResult.length === 0) {
       return res.status(404).json({ error: "Article not found" });
     }
+    else{
+      console.log(photosResult);
+    }
 
+    const getphotodata = (item)=>{
+      const photos = JSON.parse(item);
+      return photos.map((photoObj) => photoObj.photo);
+    }
     const formattedResult = {
       ...photosResult[0],
-      photos: photosResult[0].photos ? photosResult[0].photos.split(",") : [],
+      photos: photosResult[0].photos ? getphotodata(photosResult[0].photos) : [],
     };
+    console.log(formattedResult,"{}{}{}{}{}{}");
 
+    // const outputArray = inputArray.map((item) => {
+      
+    // });
     // Merge the calculated data into the formatted result
     formattedResult.calculatedData = calculatedData;
 
