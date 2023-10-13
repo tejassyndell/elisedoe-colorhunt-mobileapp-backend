@@ -27,7 +27,7 @@ const {
   getSoNumber,
   getsoarticledetails,
   udatepartytoken,
-  getPendingSoDetails,
+  getcompleteoutwordDetails,
   getCompletedSoDetails
 } = require("../controller/controllerM2.js");
 
@@ -58,6 +58,6 @@ Routes.post("/getNotification", getNotification);
 Routes.post("/getsonumber",getSoNumber);
 Routes.post("/getsoarticledetails",getsoarticledetails);
 Routes.post("/udatepartytoken",udatepartytoken);
-Routes.post("/getpendingsodetails",getPendingSoDetails);
+Routes.post("/getcompleteoutwordDetails",getcompleteoutwordDetails);
 Routes.post("/getcompletedsodetails",getCompletedSoDetails);
 module.exports = Routes;

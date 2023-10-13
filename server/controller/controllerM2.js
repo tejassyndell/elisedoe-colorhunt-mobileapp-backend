@@ -1431,7 +1431,7 @@ exports.getSoNumber = async (req, res) => {
     console.log(PartyId);
     // const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate , sn.Remarks ,sn.Transporter,sn.UserId FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ? ORDER BY sn.CreatedDate DESC';
     const q1 =
-      'SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear ' +
+      'SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.NoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear ' +
       'FROM sonumber sn ' +
       'LEFT JOIN so so ON sn.id = so.SoNumberId ' +
       'LEFT JOIN users u ON sn.UserId = u.Id ' + // Assuming the user's name column is named 'Name'
@@ -1447,13 +1447,13 @@ exports.getSoNumber = async (req, res) => {
 
           if (existingEntry) {
             // Add to existing entry's arrays
-            existingEntry.OutwardNoPacks.push(row.OutwardNoPacks);
+            existingEntry.OutwardNoPacks.push(row.NoPacks);
             existingEntry.ArticleRate.push(row.ArticleRate);
           } else {
             // Create a new entry with arrays
             acc.push({
               ...row,
-              OutwardNoPacks: [row.OutwardNoPacks],
+              OutwardNoPacks: [row.NoPacks],
               ArticleRate: [row.ArticleRate],
             });
           }
@@ -1573,8 +1573,41 @@ exports.udatepartytoken = async (req, resp) => {
 
 }
 
-exports.getPendingSoDetails = async (req, resp) => {
+exports.getcompleteoutwordDetails = async (req, resp) => {
   console.log("Pending So Detials");
+  const {articlearray,OutwardNumberId,PartyId}=req.body;
+  console.log(articlearray,OutwardNumberId,PartyId);
+  const q1=`SELECT ow.OutwardRate AS ArticleRate , a.ArticleNumber , a.ArticleColor ,a.ArticleSize ,
+  c.Title,
+  ow.NoPacks AS OutwardNoPacks
+  FROM article AS a 
+  LEFT JOIN outward as ow ON a.Id = ow.ArticleId
+  LEFT JOIN category as c ON a.CategoryId = c.Id
+  WHERE a.Id = ? AND ow.OutwardNumberId = ?
+  AND ow.PartyId = ?`
+
+  try {
+    const finalarray = await Promise.all(
+      articlearray.map(async (item) => {
+        return new Promise((resolve, reject) => {
+          connection.query(q1, [item, OutwardNumberId, PartyId], (error, result) => {
+            if (error) {
+              console.log(error);
+              reject(error);
+            } else {
+              // console.log(result);
+              resolve(result[0]);
+            }
+          });
+        });
+      })
+    );
+
+    resp.status(200).json(finalarray);
+  } catch (error) {
+    console.error(error);
+    resp.status(500).json({ error: error });
+  }
 }
 
 
@@ -1583,6 +1616,7 @@ exports.getCompletedSoDetails = async (req, resp) => {
   console.log("Completed So Detials "+PartyId);
   const q1 = `SELECT 
   o.NoPacks , 
+  o.ArticleId ,
   o.OutwardRate , 
   o.OutwardNumberId , 
   own.OutwardDate, 
@@ -1612,11 +1646,12 @@ exports.getCompletedSoDetails = async (req, resp) => {
       resulte.forEach(item => {
         const outwardNumberId = item.OutwardNumberId;
         const existingEntry = filteredData.find(entry => entry.OutwardNumberId === outwardNumberId);
-      
+
         if (existingEntry) {
-          // Add NoPacks and OutwardRate as strings to their respective arrays
+          // Add NoPacks, OutwardRate, and ArticleId as strings to their respective arrays
           existingEntry.OutwardNoPacks.push(item.NoPacks.toString());
           existingEntry.ArticleRate.push(item.OutwardRate.toString());
+          existingEntry.outwardArticleId.push(item.ArticleId);
         } else {
           // Create a new entry in the filteredData array
           filteredData.push({
@@ -1631,6 +1666,7 @@ exports.getCompletedSoDetails = async (req, resp) => {
             EndYear: item.EndYear,
             OutwardNoPacks: [item.NoPacks.toString()],
             ArticleRate: [item.OutwardRate.toString()],
+            outwardArticleId: [item.ArticleId],
             status: 1
           });
         }
