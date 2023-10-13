@@ -45,7 +45,7 @@ const upload = multer({
 
 //Full Article data
 exports.getAllArticles = async (req, res) => {
-  const query = `SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a LEFT JOIN articlerate AS ar ON a.Id = ar.ArticleId LEFT JOIN articlephotos AS ap ON a.Id = ap.ArticlesId LEFT JOIN category AS c ON a.CategoryId = c.Id LEFT JOIN subcategory AS sc ON a.SubCategoryId = sc.Id WHERE ar.ArticleRate IS NOT NULL AND ar.ArticleRate IS NOT NULL GROUP BY a.ArticleNumber ORDER BY ar.ArticleRate ASC;`;
+  const query = `SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a LEFT JOIN articlerate AS ar ON a.Id = ar.ArticleId LEFT JOIN articlephotos AS ap ON a.Id = ap.ArticlesId LEFT JOIN category AS c ON a.CategoryId = c.Id LEFT JOIN subcategory AS sc ON a.SubCategoryId = sc.Id WHERE ar.ArticleRate IS NOT NULL AND ar.ArticleRate IS NOT NULL GROUP BY a.ArticleNumber ORDER BY ar.ArticleRate ASC LIMIT 20`;
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -57,16 +57,20 @@ exports.getAllArticles = async (req, res) => {
         const photos = JSON.parse(item.Photos);
         let firstPhoto;
         if (photos) {
-        
+
           firstPhoto = photos.length > 0 ? photos[0].photo : "";
         }
         else {
-          firstPhoto = ["demo.png"];
+          firstPhoto = ["demo"];
         }
         return {
           ...item,
+          Subcategory: item.Subcategory == null ? "Not avalable" : item.Subcategory,
+          StyleDescription: item.StyleDescription == null ? "Not avalable" : item.StyleDescription,
           Photos: firstPhoto
         };
+
+
       });
 
       res.status(200).json(outputArray);
@@ -371,7 +375,7 @@ exports.articledetails = async (req, res) => {
     // Merge the calculated data into the formatted result
     formattedResult.calculatedData = calculatedData;
 
-    res.json(formattedResult);
+    res.status(200).json(formattedResult);
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Failed to get data from database table" });
@@ -986,7 +990,7 @@ exports.addso = (req, res) => {
       (error, result) => {
         if (error) {
           console.error('Error inserting data:', error);
-          res.status(500).json({ error: 'Internal Server Error' });
+          res.status(500).json({ error });
         } else {
           SoNumberId = result.insertId;
           console.log(SoNumberId, "///////////");
@@ -994,7 +998,7 @@ exports.addso = (req, res) => {
           connection.query(userNameQuery, [data.UserId], (err, userNameResult) => {
             if (err) {
               console.error('Error retrieving user name:', err);
-              res.status(500).json({ error: 'Internal Server Error' });
+              res.status(500).json({ error });
             } else {
               const sodRecQuery = `
                   SELECT CONCAT(?, '/', fn.StartYear, '-', fn.EndYear) AS SONumber
@@ -1006,7 +1010,7 @@ exports.addso = (req, res) => {
               connection.query(sodRecQuery, [SO_Number, result.insertId], (err, sodRecResult) => {
                 if (err) {
                   console.error('Error retrieving SO data:', err);
-                  res.status(500).json({ error: 'Internal Server Error' });
+                  res.status(500).json({ error });
                 } else {
                   const userName = userNameResult[0].Name;
                   const SONumber = sodRecResult[0].SONumber;
@@ -1022,7 +1026,7 @@ exports.addso = (req, res) => {
                     (err) => {
                       if (err) {
                         console.error('Error creating UserLog:', err);
-                        res.status(500).json({ error: 'Internal Server Error' });
+                        res.status(500).json({ error });
                       } else {
                         console.log({ message: 'SO created successfully' });
                         data.DataArticle.map(async (item) => {
@@ -1214,7 +1218,7 @@ exports.addso = (req, res) => {
                             }
                           } catch (error) {
                             console.error('Error:', error);
-                            res.status(500).json({ error: 'Internal Server Error' });
+                            res.status(500).json({ error });
                           }
                         })
 
@@ -1514,6 +1518,7 @@ exports.getSoNumber = async (req, res) => {
 };
 exports.getsoarticledetails = (req, resp) => {
   const { sonumber, party_id, CreatedDate } = req.body;
+  console.log(sonumber, party_id, CreatedDate,"()()()()()()()");
   // MySQL query
   const query = `
     SELECT
@@ -1531,7 +1536,7 @@ exports.getsoarticledetails = (req, resp) => {
     INNER JOIN so AS sn ON s.Id = sn.SoNumberId 
     INNER JOIN article AS a ON a.Id = sn.ArticleId
     INNER JOIN category AS c ON c.Id = a.CategoryId
-    WHERE s.SoNumber = ? AND s.PartyId = ? AND s.CreatedDate = ? 
+    WHERE s.SoNumber = ? AND s.PartyId = ?
   `;
 
   // Execute the query
@@ -1545,7 +1550,7 @@ exports.getsoarticledetails = (req, resp) => {
       console.log();
       return resp.status(404).json({ error: 'SO not found' });
     }
-
+    console.log(results);
 
     resp.status(200).json(results);
 
@@ -1566,4 +1571,72 @@ exports.udatepartytoken = async (req, resp) => {
     }
   });
 
+}
+
+exports.getPendingSoDetails = async (req, resp) => {
+  console.log("Pending So Detials");
+}
+
+
+exports.getCompletedSoDetails = async (req, resp) => {
+  const { PartyId } = req.body;
+  console.log("Completed So Detials "+PartyId);
+  const q1 = `SELECT 
+  o.NoPacks , 
+  o.OutwardRate , 
+  o.OutwardNumberId , 
+  own.OutwardDate, 
+  own.FinancialYearId , 
+  own.OutwardNumber , 
+  sn.SoNumber , 
+  sn.Transporter , 
+  us.Name AS UserName , 
+  fn.StartYear , 
+  fn.EndYear 
+  FROM outward AS o 
+  LEFT JOIN outwardnumber AS own ON o.OutwardNumberId = own.Id
+  LEFT JOIN so AS s ON own.SoId = s.Id
+  LEFT JOIN sonumber As sn ON s.SoNumberId = sn.Id
+  LEFT JOIN financialyear AS fn ON own.FinancialYearId = fn.Id
+  LEFT JOIN users as us ON own.UserId = us.Id
+  WHERE o.PartyId = ?`
+
+  connection.query(q1, [PartyId], (error, resulte) => {
+    if (error) {
+      resp.state(500).json({ error: error })
+    }
+    else {
+      const filteredData = [];
+
+      // Loop through the input data
+      resulte.forEach(item => {
+        const outwardNumberId = item.OutwardNumberId;
+        const existingEntry = filteredData.find(entry => entry.OutwardNumberId === outwardNumberId);
+      
+        if (existingEntry) {
+          // Add NoPacks and OutwardRate as strings to their respective arrays
+          existingEntry.OutwardNoPacks.push(item.NoPacks.toString());
+          existingEntry.ArticleRate.push(item.OutwardRate.toString());
+        } else {
+          // Create a new entry in the filteredData array
+          filteredData.push({
+            OutwardNumberId: outwardNumberId,
+            CreatedDate: item.OutwardDate,
+            FinancialYearId: item.FinancialYearId,
+            OutwardNumber: item.OutwardNumber,
+            SoNumber: item.SoNumber,
+            Transporter: item.Transporter,
+            UserName: item.UserName,
+            StartYear: item.StartYear,
+            EndYear: item.EndYear,
+            OutwardNoPacks: [item.NoPacks.toString()],
+            ArticleRate: [item.OutwardRate.toString()],
+            status: 1
+          });
+        }
+      });
+
+      resp.status(200).json(filteredData);
+    }
+  })
 }
