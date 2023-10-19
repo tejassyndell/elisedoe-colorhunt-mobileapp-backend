@@ -10,6 +10,8 @@ const express = require('express');
 
 const app = express();
 
+
+
 app.use(bodyParser.json());
 
 // Create an Expo client
@@ -21,7 +23,20 @@ const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
-
+exports.pushnotification = async (req, resp) => {
+  const { registrationToken, title, body } = req.body;
+  // console.log(registrationToken, title, body);
+  await admin.messaging().sendMulticast({
+    tokens: [
+      registrationToken
+    ], // ['token_1', 'token_2', ...]
+    notification: {
+      title: title,
+      body: body,
+      imageUrl: 'https://my-cdn.com/app-logo.png',
+    },
+  });
+}
 //image upload function
 const imgconfig = multer.diskStorage({
   destination: (req, file, callback) => {
@@ -1417,7 +1432,7 @@ exports.getNotification = async (req, res) => {
   try {
     const response = await expo.sendPushNotificationsAsync([message]);
     console.log('Notification sent successfully:', response);
-    res.status(200).json({ message: 'Notification sent successfully' });
+    res.status(200).json(response);
   } catch (error) {
     console.error('Error sending notification:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1518,7 +1533,7 @@ exports.getSoNumber = async (req, res) => {
 };
 exports.getsoarticledetails = (req, resp) => {
   const { sonumber, party_id, CreatedDate } = req.body;
-  console.log(sonumber, party_id, CreatedDate,"()()()()()()()");
+  console.log(sonumber, party_id, CreatedDate, "()()()()()()()");
   // MySQL query
   const query = `
     SELECT
@@ -1575,9 +1590,9 @@ exports.udatepartytoken = async (req, resp) => {
 
 exports.getcompleteoutwordDetails = async (req, resp) => {
   console.log("Pending So Detials");
-  const {articlearray,OutwardNumberId,PartyId}=req.body;
-  console.log(articlearray,OutwardNumberId,PartyId);
-  const q1=`SELECT ow.OutwardRate AS ArticleRate , a.ArticleNumber , a.ArticleColor ,a.ArticleSize ,
+  const { articlearray, OutwardNumberId, PartyId } = req.body;
+  console.log(articlearray, OutwardNumberId, PartyId);
+  const q1 = `SELECT ow.OutwardRate AS ArticleRate , a.ArticleNumber , a.ArticleColor ,a.ArticleSize ,
   c.Title,
   ow.NoPacks AS OutwardNoPacks
   FROM article AS a 
@@ -1613,7 +1628,7 @@ exports.getcompleteoutwordDetails = async (req, resp) => {
 
 exports.getCompletedSoDetails = async (req, resp) => {
   const { PartyId } = req.body;
-  console.log("Completed So Detials "+PartyId);
+  console.log("Completed So Detials " + PartyId);
   const q1 = `SELECT 
   o.NoPacks , 
   o.ArticleId ,
