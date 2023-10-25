@@ -10,8 +10,6 @@ const express = require('express');
 
 const app = express();
 
-
-
 app.use(bodyParser.json());
 
 // Create an Expo client
@@ -23,20 +21,7 @@ const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
-exports.pushnotification = async (req, resp) => {
-  const { registrationToken, title, body } = req.body;
-  // console.log(registrationToken, title, body);
-  await admin.messaging().sendMulticast({
-    tokens: [
-      registrationToken
-    ], // ['token_1', 'token_2', ...]
-    notification: {
-      title: title,
-      body: body,
-      imageUrl: 'https://my-cdn.com/app-logo.png',
-    },
-  });
-}
+
 //image upload function
 const imgconfig = multer.diskStorage({
   destination: (req, file, callback) => {
@@ -57,10 +42,23 @@ const upload = multer({
   storage: imgconfig,
   fileFilter: imgfilter,
 });
-
+exports.pushnotification = async (req, resp) => {
+  const { registrationToken, title, body } = req.body;
+  console.log(registrationToken);
+  await admin.messaging().sendMulticast({
+    tokens: [
+      registrationToken
+    ], // ['token_1', 'token_2', ...]
+    notification: {
+      title: title,
+      body: body,
+      imageUrl: 'https://my-cdn.com/app-logo.png',
+    },
+  });
+}
 //Full Article data
 exports.getAllArticles = async (req, res) => {
-  const query = `SELECT a.Id, a.ArticleNumber, a.StyleDescription, ar.ArticleRate, ap.Name AS Photos, c.Title AS Category, sc.Name AS Subcategory FROM article AS a LEFT JOIN articlerate AS ar ON a.Id = ar.ArticleId LEFT JOIN articlephotos AS ap ON a.Id = ap.ArticlesId LEFT JOIN category AS c ON a.CategoryId = c.Id LEFT JOIN subcategory AS sc ON a.SubCategoryId = sc.Id WHERE ar.ArticleRate IS NOT NULL AND ar.ArticleRate IS NOT NULL GROUP BY a.ArticleNumber ORDER BY ar.ArticleRate ASC LIMIT 20`;
+  const query = `SELECT a.Id, a.ArticleStatus, a.ArticleNumber, COALESCE(a.StyleDescription, '-') AS StyleDescription, ar.ArticleRate, COALESCE(ap.Name, '[{"photo":"default-art-photo.png"}]') AS Photos, COALESCE(c.Title, '-') AS Category, COALESCE(sc.Name, '-') AS Subcategory FROM article AS a LEFT JOIN articlerate AS ar ON a.Id = ar.ArticleId LEFT JOIN articlephotos AS ap ON a.Id = ap.ArticlesId LEFT JOIN category AS c ON a.CategoryId = c.Id LEFT JOIN subcategory AS sc ON a.SubCategoryId = sc.Id WHERE a.ArticleStatus = 1  AND  ar.ArticleRate > 1 AND ar.ArticleRate IS NOT NULL AND ar.ArticleRate IS NOT NULL GROUP BY a.ArticleNumber ORDER BY ar.ArticleRate ASC ; `;
 
   connection.query(query, (error, productData) => {
     if (error) {
@@ -72,20 +70,16 @@ exports.getAllArticles = async (req, res) => {
         const photos = JSON.parse(item.Photos);
         let firstPhoto;
         if (photos) {
-
+        
           firstPhoto = photos.length > 0 ? photos[0].photo : "";
         }
         else {
-          firstPhoto = ["demo"];
+          firstPhoto = ["demo.png"];
         }
         return {
           ...item,
-          Subcategory: item.Subcategory == null ? "Not avalable" : item.Subcategory,
-          StyleDescription: item.StyleDescription == null ? "Not avalable" : item.StyleDescription,
           Photos: firstPhoto
         };
-
-
       });
 
       res.status(200).json(outputArray);
@@ -190,14 +184,33 @@ exports.AddWishlist = (req, res) => {
 //get wishlist api
 exports.getWishlist = (req, res) => {
   const { party_id } = req.body;
-  const query = `SELECT a.Id, a.ArticleNumber, r.ArticleRate, c.Title, p.Name as article_photos  FROM wishlist wl INNER JOIN article a ON wl.article_id = a.Id INNER JOIN articlerate r ON a.Id = r.ArticleId left JOIN articlephotos p ON a.Id = p.ArticlesId INNER JOIN category c ON a.CategoryId = c.Id WHERE wl.party_id = ${party_id} GROUP BY a.Id`;
+  const query = `SELECT a.Id, a.ArticleNumber, r.ArticleRate, c.Title, COALESCE(p.Name, '[{"photo":"default-art-photo.png"}]') AS Photos  FROM wishlist wl INNER JOIN article a ON wl.article_id = a.Id INNER JOIN articlerate r ON a.Id = r.ArticleId left JOIN articlephotos p ON a.Id = p.ArticlesId INNER JOIN category c ON a.CategoryId = c.Id WHERE wl.party_id = ${party_id} GROUP BY a.Id`;
 
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
       res.status(500).json({ error: "Failed to get data from database table" });
     } else {
-      res.status(200).json(results);
+        
+        
+      const outputArray = results.map((item) => {
+        const photos = JSON.parse(item.Photos);
+        let firstPhoto;
+        if (photos) {
+        
+          firstPhoto = photos.length > 0 ? photos[0].photo : "";
+        }
+      
+        return {
+          ...item,
+          Photos: firstPhoto
+        };
+      });
+
+      res.status(200).json(outputArray);
+    
+        
+    //   res.status(200).json(results);
     }
   });
 };
@@ -262,8 +275,8 @@ exports.articledetails = async (req, res) => {
         let totalInward = 0;
         let totalOutwards = 0;
 
-        const inwardQuery = `SELECT NoPacks FROM Inward WHERE ArticleId = '${ArticleId}'`;
-        const outwardQuery = `SELECT NoPacks FROM Outward WHERE ArticleId = '${ArticleId}'`;
+        const inwardQuery = `SELECT NoPacks FROM inward WHERE ArticleId = '${ArticleId}'`;
+        const outwardQuery = `SELECT NoPacks FROM outward WHERE ArticleId = '${ArticleId}'`;
         // Other queries for salesreturns, purchasereturns, stocktransfers, stockshortage, SO, etc.
 
         const [inwards, outwards] = await Promise.all([
@@ -295,7 +308,7 @@ exports.articledetails = async (req, res) => {
         } else {
           let outletPartyArticleRate;
           if (outletArticleRate[0].UserId) {
-            const userRecordQuery = `SELECT PartyId FROM Users WHERE Id = '${outletArticleRate[0].UserId}'`;
+            const userRecordQuery = `SELECT PartyId FROM users WHERE Id = '${outletArticleRate[0].UserId}'`;
             const userRecord = await executeQuery(userRecordQuery);
             if (userRecord[0].PartyId !== 0) {
               const outletPartyArticleRateQuery = `SELECT OutletArticleRate FROM party WHERE Id = '${userRecord[0].PartyId}'`;
@@ -390,10 +403,10 @@ exports.articledetails = async (req, res) => {
     // Merge the calculated data into the formatted result
     formattedResult.calculatedData = calculatedData;
 
-    res.status(200).json(formattedResult);
+    res.json(formattedResult);
   } catch (error) {
     console.error("Error:", error);
-    res.status(500).json({ error: "Failed to get data from database table" });
+    res.status(500).json({ error: error });
   }
 };
 
@@ -427,7 +440,7 @@ exports.orderdetails = (req, res) => {
       await UserLogs.create({
         Module: "SO",
         ModuleNumberId: SoNumberId,
-        LogType: "Created",
+        LogType: "Created By Mobile App",
         LogDescription: `${userName.Name} created so with SO Number ${sodRec.SONumber}`,
         UserId: userName.Id,
         updated_at: null,
@@ -437,7 +450,7 @@ exports.orderdetails = (req, res) => {
       await UserLogs.create({
         Module: "SO",
         ModuleNumberId: SoNumberId,
-        LogType: "Updated",
+        LogType: "Updated By Mobile App",
         LogDescription: `${userName.Name} added article ${artRecor.ArticleNumber} in so with SO Number ${sodRec.SONumber}`,
         UserId: userName.Id,
         updated_at: null,
@@ -776,7 +789,11 @@ exports.updateCartArticale = (req, res) => {
 //getcartdetails api
 exports.cartdetails = (req, res) => {
   const { party_id } = req.body;
-  const query = `SELECT ArticleNumber,ArticleColor,ArticleOpenFlag, StyleDescription, article_id, ar.articleRate, rate, (SELECT ap.Name FROM articlephotos ap WHERE ap.ArticlesId = a.Id LIMIT 1) as Photos , Quantity FROM cart INNER JOIN article a ON cart.article_id = a.Id INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id = ${party_id} AND status = 0`;
+
+ 
+  
+
+  const query = ` SELECT ArticleNumber,ArticleColor,ArticleOpenFlag, StyleDescription, article_id, ar.articleRate, rate , COALESCE(ap.Name, '[{"photo":"default-art-photo.png"}]') AS Photos, Quantity FROM cart INNER JOIN article a ON cart.article_id = a.Id LEFT JOIN articlephotos ap ON cart.article_id = ap.ArticlesId INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id =${party_id} AND status = 0`;
   connection.query(query, (error, results) => {
     if (error) {
       console.log("Error Executing Query:", error);
@@ -784,7 +801,25 @@ exports.cartdetails = (req, res) => {
         .status(500)
         .json({ error: "Failed to get data from database table " });
     } else {
-      res.status(200).json(results);
+      
+      const outputArray = results.map((item) => {
+        const photos = JSON.parse(item.Photos);
+        let firstPhoto;
+        if (photos) {
+        
+          firstPhoto = photos.length > 0 ? photos[0].photo : "";
+        }
+        else {
+          firstPhoto = ["demo.png"];
+        }
+        return {
+          ...item,
+          Photos: firstPhoto
+        };
+      });
+
+      res.status(200).json(outputArray);
+   
     }
   });
 };
@@ -823,8 +858,8 @@ exports.getCartArticleDetails = async (req, res) => {
         let totalInward = 0;
         let totalOutwards = 0;
 
-        const inwardQuery = `SELECT NoPacks FROM Inward WHERE ArticleId = '${ArticleId}'`;
-        const outwardQuery = `SELECT NoPacks FROM Outward WHERE ArticleId = '${ArticleId}'`;
+        const inwardQuery = `SELECT NoPacks FROM inward WHERE ArticleId = '${ArticleId}'`;
+        const outwardQuery = `SELECT NoPacks FROM outward WHERE ArticleId = '${ArticleId}'`;
         // Other queries for salesreturns, purchasereturns, stocktransfers, stockshortage, SO, etc.
 
         const [inwards, outwards] = await Promise.all([
@@ -1005,15 +1040,15 @@ exports.addso = (req, res) => {
       (error, result) => {
         if (error) {
           console.error('Error inserting data:', error);
-          res.status(500).json({ error });
+          res.status(500).json({ error: err });
         } else {
           SoNumberId = result.insertId;
           console.log(SoNumberId, "///////////");
-          const userNameQuery = 'SELECT Name FROM Users WHERE Id = ?';
+          const userNameQuery = 'SELECT Name FROM users WHERE Id = ?';
           connection.query(userNameQuery, [data.UserId], (err, userNameResult) => {
             if (err) {
               console.error('Error retrieving user name:', err);
-              res.status(500).json({ error });
+              res.status(500).json({ error: err });
             } else {
               const sodRecQuery = `
                   SELECT CONCAT(?, '/', fn.StartYear, '-', fn.EndYear) AS SONumber
@@ -1025,13 +1060,13 @@ exports.addso = (req, res) => {
               connection.query(sodRecQuery, [SO_Number, result.insertId], (err, sodRecResult) => {
                 if (err) {
                   console.error('Error retrieving SO data:', err);
-                  res.status(500).json({ error });
+                  res.status(500).json({ error: err });
                 } else {
                   const userName = userNameResult[0].Name;
                   const SONumber = sodRecResult[0].SONumber;
 
                   const logQuery = `
-                      INSERT INTO UserLogs (Module, ModuleNumberId, LogType, LogDescription, UserId)
+                      INSERT INTO userlogs (Module, ModuleNumberId, LogType, LogDescription, UserId)
                       VALUES (?, ?, ?, ?, ?)
                     `;
 
@@ -1041,7 +1076,7 @@ exports.addso = (req, res) => {
                     (err) => {
                       if (err) {
                         console.error('Error creating UserLog:', err);
-                        res.status(500).json({ error });
+                        res.status(500).json({ error: err });
                       } else {
                         console.log({ message: 'SO created successfully' });
                         data.DataArticle.map(async (item) => {
@@ -1233,7 +1268,7 @@ exports.addso = (req, res) => {
                             }
                           } catch (error) {
                             console.error('Error:', error);
-                            res.status(500).json({ error });
+                            res.status(500).json({ error: error });
                           }
                         })
 
@@ -1324,21 +1359,26 @@ exports.SendMail = async (req, res) => {
     res.status(200).json('sent');
   } catch (error) {
     console.error('Error sending email:', error);
-    res.status(500).json({ error: 'Failed to send email' });
+    res.status(500).json({ error: error });
   }
 }
 
 exports.phoneNumberValidation = (req, res) => {
+    
   const { number } = req.body;
+//   res.status(200).json(number);
   console.log(number);
-  const query = `SELECT  Id , Name, UserId ,PhoneNumber,Additional_phone_numbers,Address,City,State,PinCode,Country,GSTNumber,GSTType,token from party WHERE PhoneNumber = ? OR Additional_phone_numbers LIKE ?`;
+  const query = `SELECT  Id , Name, UserId ,PhoneNumber,Additional_phone_numbers,Address,City,State,Status, PinCode,Country,GSTNumber,GSTType,token from party WHERE PhoneNumber = ? OR Additional_phone_numbers LIKE ?`;
   const numberPattern = `%${number}%`;
   connection.query(query, [number, numberPattern], (error, results) => {
     if (error) {
       console.error("Error executing query", error);
-      res.status(500).json({ error: "Failed to retrive data from database" });
+      res.status(500).json({ error: error});
     } else {
       if (results.length > 0) {
+          if(results[0].Status == 0){
+               res.status(500).json({ error: "Your Account is not verified" });
+          }
         res.status(200).json(results);
       } else {
         res.status(201).json();
@@ -1432,7 +1472,7 @@ exports.getNotification = async (req, res) => {
   try {
     const response = await expo.sendPushNotificationsAsync([message]);
     console.log('Notification sent successfully:', response);
-    res.status(200).json(response);
+    res.status(200).json({ message: 'Notification sent successfully' });
   } catch (error) {
     console.error('Error sending notification:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1528,12 +1568,12 @@ exports.getSoNumber = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'An error occurred' });
+    res.status(500).json({ error: error });
   }
 };
+
 exports.getsoarticledetails = (req, resp) => {
   const { sonumber, party_id, CreatedDate } = req.body;
-  console.log(sonumber, party_id, CreatedDate, "()()()()()()()");
   // MySQL query
   const query = `
     SELECT
@@ -1551,21 +1591,21 @@ exports.getsoarticledetails = (req, resp) => {
     INNER JOIN so AS sn ON s.Id = sn.SoNumberId 
     INNER JOIN article AS a ON a.Id = sn.ArticleId
     INNER JOIN category AS c ON c.Id = a.CategoryId
-    WHERE s.SoNumber = ? AND s.PartyId = ?
+    WHERE s.SoNumber = ? AND s.PartyId = ? 
   `;
 
   // Execute the query
   connection.query(query, [sonumber, party_id, CreatedDate], (error, results) => {
     if (error) {
       console.error(error);
-      return resp.status(500).json({ error: 'Internal server error' });
+      return resp.status(500).json({ error: error});
     }
 
     if (results.length === 0) {
       console.log();
       return resp.status(404).json({ error: 'SO not found' });
     }
-    console.log(results);
+
 
     resp.status(200).json(results);
 
@@ -1588,11 +1628,12 @@ exports.udatepartytoken = async (req, resp) => {
 
 }
 
+
 exports.getcompleteoutwordDetails = async (req, resp) => {
   console.log("Pending So Detials");
-  const { articlearray, OutwardNumberId, PartyId } = req.body;
-  console.log(articlearray, OutwardNumberId, PartyId);
-  const q1 = `SELECT ow.OutwardRate AS ArticleRate , a.ArticleNumber , a.ArticleColor ,a.ArticleSize ,
+  const {articlearray,OutwardNumberId,PartyId}=req.body;
+  console.log(articlearray,OutwardNumberId,PartyId);
+  const q1=`SELECT ow.OutwardRate AS ArticleRate , a.ArticleNumber , a.ArticleColor ,a.ArticleSize ,
   c.Title,
   ow.NoPacks AS OutwardNoPacks
   FROM article AS a 
@@ -1628,9 +1669,10 @@ exports.getcompleteoutwordDetails = async (req, resp) => {
 
 exports.getCompletedSoDetails = async (req, resp) => {
   const { PartyId } = req.body;
-  console.log("Completed So Detials " + PartyId);
+  console.log("Completed So Detials "+PartyId);
   const q1 = `SELECT 
   o.NoPacks , 
+  own.Id,
   o.ArticleId ,
   o.OutwardRate , 
   o.OutwardNumberId , 
@@ -1641,14 +1683,15 @@ exports.getCompletedSoDetails = async (req, resp) => {
   sn.Transporter , 
   us.Name AS UserName , 
   fn.StartYear , 
-  fn.EndYear 
+  sn.UserId as assign_party,
+  fn.EndYear ,
+  sn.UserId
   FROM outward AS o 
   LEFT JOIN outwardnumber AS own ON o.OutwardNumberId = own.Id
-  LEFT JOIN so AS s ON own.SoId = s.Id
-  LEFT JOIN sonumber As sn ON s.SoNumberId = sn.Id
+  LEFT JOIN sonumber As sn ON own.SoId = sn.Id
   LEFT JOIN financialyear AS fn ON own.FinancialYearId = fn.Id
-  LEFT JOIN users as us ON own.UserId = us.Id
-  WHERE o.PartyId = ?`
+  LEFT JOIN users as us ON sn.UserId = us.Id
+  WHERE o.PartyId = ? ORDER BY sn.Id DESC;`
 
   connection.query(q1, [PartyId], (error, resulte) => {
     if (error) {
