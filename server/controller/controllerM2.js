@@ -70,7 +70,7 @@ exports.getAllArticles = async (req, res) => {
         const photos = JSON.parse(item.Photos);
         let firstPhoto;
         if (photos) {
-        
+
           firstPhoto = photos.length > 0 ? photos[0].photo : "";
         }
         else {
@@ -136,7 +136,7 @@ function executeQuery(query) {
 
 //Categories
 exports.getCategories = (req, res) => {
-  const query = "SELECT Title as Category from category";
+  const query = "SELECT Title AS Category FROM category";
   console.log("done");
   connection.query(query, (error, results) => {
     if (error) {
@@ -183,34 +183,46 @@ exports.AddWishlist = (req, res) => {
 
 //get wishlist api
 exports.getWishlist = (req, res) => {
-  const { party_id } = req.body;
-  const query = `SELECT a.Id, a.ArticleNumber, r.ArticleRate, c.Title, COALESCE(p.Name, '[{"photo":"default-art-photo.png"}]') AS Photos  FROM wishlist wl INNER JOIN article a ON wl.article_id = a.Id INNER JOIN articlerate r ON a.Id = r.ArticleId left JOIN articlephotos p ON a.Id = p.ArticlesId INNER JOIN category c ON a.CategoryId = c.Id WHERE wl.party_id = ${party_id} GROUP BY a.Id`;
+  const { party_id, status } = req.body;
+  let query;
+  if (status == "true") {
+
+    query = `SELECT a.Id, a.ArticleNumber, r.ArticleRate, c.Title, COALESCE(p.Name, '[{"photo":"default-art-photo.png"}]') AS Photos  FROM wishlist wl INNER JOIN article a ON wl.article_id = a.Id INNER JOIN articlerate r ON a.Id = r.ArticleId left JOIN articlephotos p ON a.Id = p.ArticlesId INNER JOIN category c ON a.CategoryId = c.Id WHERE wl.party_id = ${party_id} GROUP BY a.Id`;
+  } else {
+    query = `SELECT article_id as Id FROM wishlist WHERE party_id = ${party_id}`
+  }
 
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
       res.status(500).json({ error: "Failed to get data from database table" });
     } else {
-        
-        
-      const outputArray = results.map((item) => {
-        const photos = JSON.parse(item.Photos);
-        let firstPhoto;
-        if (photos) {
-        
-          firstPhoto = photos.length > 0 ? photos[0].photo : "";
-        }
-      
-        return {
-          ...item,
-          Photos: firstPhoto
-        };
-      });
 
-      res.status(200).json(outputArray);
-    
-        
-    //   res.status(200).json(results);
+      if (status == true) {
+        const outputArray = results.map((item) => {
+          const photos = JSON.parse(item.Photos);
+          let firstPhoto;
+          if (photos) {
+
+            firstPhoto = photos.length > 0 ? photos[0].photo : "";
+          }
+
+          return {
+            ...item,
+            Photos: firstPhoto
+          };
+        });
+        res.status(200).json(outputArray);
+
+      } else {
+        res.status(200).json(results);
+
+      }
+
+
+
+
+      //   res.status(200).json(results);
     }
   });
 };
@@ -790,8 +802,8 @@ exports.updateCartArticale = (req, res) => {
 exports.cartdetails = (req, res) => {
   const { party_id } = req.body;
 
- 
-  
+
+
 
   const query = ` SELECT ArticleNumber,ArticleColor,ArticleOpenFlag, StyleDescription, article_id, ar.articleRate, rate , COALESCE(ap.Name, '[{"photo":"default-art-photo.png"}]') AS Photos, Quantity FROM cart INNER JOIN article a ON cart.article_id = a.Id LEFT JOIN articlephotos ap ON cart.article_id = ap.ArticlesId INNER JOIN articlerate ar ON cart.article_id = ar.ArticleId WHERE party_id =${party_id} AND status = 0`;
   connection.query(query, (error, results) => {
@@ -801,12 +813,12 @@ exports.cartdetails = (req, res) => {
         .status(500)
         .json({ error: "Failed to get data from database table " });
     } else {
-      
+
       const outputArray = results.map((item) => {
         const photos = JSON.parse(item.Photos);
         let firstPhoto;
         if (photos) {
-        
+
           firstPhoto = photos.length > 0 ? photos[0].photo : "";
         }
         else {
@@ -819,7 +831,7 @@ exports.cartdetails = (req, res) => {
       });
 
       res.status(200).json(outputArray);
-   
+
     }
   });
 };
@@ -1364,21 +1376,21 @@ exports.SendMail = async (req, res) => {
 }
 
 exports.phoneNumberValidation = (req, res) => {
-    
+
   const { number } = req.body;
-//   res.status(200).json(number);
+  //   res.status(200).json(number);
   console.log(number);
   const query = `SELECT  Id , Name, UserId ,PhoneNumber,Additional_phone_numbers,Address,City,State,Status, PinCode,Country,GSTNumber,GSTType,token from party WHERE PhoneNumber = ? OR Additional_phone_numbers LIKE ?`;
   const numberPattern = `%${number}%`;
   connection.query(query, [number, numberPattern], (error, results) => {
     if (error) {
       console.error("Error executing query", error);
-      res.status(500).json({ error: error});
+      res.status(500).json({ error: error });
     } else {
       if (results.length > 0) {
-          if(results[0].Status == 0){
-               res.status(500).json({ error: "Your Account is not verified" });
-          }
+        if (results[0].Status == 0) {
+          res.status(500).json({ error: "Your Account is not verified" });
+        }
         res.status(200).json(results);
       } else {
         res.status(201).json();
@@ -1481,19 +1493,22 @@ exports.getNotification = async (req, res) => {
 
 exports.getSoNumber = async (req, res) => {
   console.log("So Number");
+
   try {
-    const { PartyId } = req.body;
-    console.log(PartyId);
-    // const q1 = 'SELECT sn.UserId,sn.SoNumber,sn.SoDate,sn.PartyId,sn.Id,sn.CreatedDate, so.OutwardNoPacks, so.ArticleRate , sn.Remarks ,sn.Transporter,sn.UserId FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId WHERE sn.PartyId = ? ORDER BY sn.CreatedDate DESC';
-    const q1 =
-      'SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.NoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear ' +
-      'FROM sonumber sn ' +
-      'LEFT JOIN so so ON sn.id = so.SoNumberId ' +
-      'LEFT JOIN users u ON sn.UserId = u.Id ' + // Assuming the user's name column is named 'Name'
-      'LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id ' + // Assuming the FinancialYearId column in 'sonumber' maps to 'Id' in 'financialyear'
-      'WHERE sn.PartyId = ? ' +
-      'ORDER BY sn.CreatedDate DESC';
-    connection.query(q1, [PartyId], (err, resulte) => {
+    const { PartyId, page, pageSize } = req.body;
+    console.log( PartyId, page, pageSize );
+    const offset = (page - 1) * pageSize; // Calculate the offset based on page and page size
+
+    const q1 = `
+      SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.NoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear
+      FROM sonumber sn
+      LEFT JOIN so so ON sn.id = so.SoNumberId
+      LEFT JOIN users u ON sn.UserId = u.Id
+      LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id
+      WHERE sn.PartyId = ?
+      ORDER BY sn.CreatedDate DESC
+      LIMIT ? OFFSET ?`;
+      connection.query(q1, [PartyId, parseInt(pageSize), offset], (err, resulte) => {
       if (err) {
         res.status(500).json(err);
       } else {
@@ -1561,7 +1576,8 @@ exports.getSoNumber = async (req, res) => {
 
             // const filteredData = combinedData.filter(item => item.status === 1);
             // console.log(combinedData);
-            res.status(200).json(combinedData);
+            const hasMore = resulte.length === parseInt(pageSize);
+            res.status(200).json({ data: combinedData, hasMore });
           }
         });
       }
@@ -1572,6 +1588,104 @@ exports.getSoNumber = async (req, res) => {
   }
 };
 
+exports.FilterSoNumber = async (req,res)=>{
+ 
+    console.log("Filter So Number");
+  
+    try {
+      const { PartyId, page, pageSize ,filterdate } = req.body;
+      console.log( PartyId, page, pageSize,filterdate );
+      const offset = (page - 1) * pageSize; // Calculate the offset based on page and page size
+  
+      const q1 = `
+        SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.NoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear
+        FROM sonumber sn
+        LEFT JOIN so so ON sn.id = so.SoNumberId
+        LEFT JOIN users u ON sn.UserId = u.Id
+        LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id
+        WHERE sn.PartyId = ? AND  sn.SoDate = ?
+        ORDER BY sn.CreatedDate DESC
+        LIMIT ? OFFSET ?`;
+        connection.query(q1, [PartyId,filterdate, parseInt(pageSize), offset], (err, resulte) => {
+        if (err) {
+          res.status(500).json(err);
+        } else {
+          const transformedResults = resulte.reduce((acc, row) => {
+            const existingEntry = acc.find(entry => entry.Id === row.Id);
+  
+            if (existingEntry) {
+              // Add to existing entry's arrays
+              existingEntry.OutwardNoPacks.push(row.NoPacks);
+              existingEntry.ArticleRate.push(row.ArticleRate);
+            } else {
+              // Create a new entry with arrays
+              acc.push({
+                ...row,
+                OutwardNoPacks: [row.NoPacks],
+                ArticleRate: [row.ArticleRate],
+              });
+            }
+  
+            return acc;
+          }, []);
+          // console.log(transformedResults);
+          const q2 = `
+          SELECT so.SoNumberId , onum.OutwardNumber
+          FROM outward AS o
+          INNER JOIN outwardnumber AS onum ON o.OutwardNumberId = onum.id
+          INNER JOIN so AS so ON onum.SoId = so.id
+          WHERE o.PartyId = ?
+        `;
+          connection.query(q2, [PartyId], (err, response) => {
+            if (err) {
+              res.status(500).json(err);
+            } else {
+  
+              // Use a Set to remove duplicates from the response array
+              const uniqueSoNumberIds = new Set();
+              // Use filter to keep only the first occurrence of each SoNumberId
+              const uniqueArray = response.filter(item => {
+                if (!uniqueSoNumberIds.has(item.SoNumberId)) {
+                  uniqueSoNumberIds.add(item.SoNumberId);
+                  return true;
+                }
+                return false;
+              });
+              // console.log(uniqueArray);
+              const combinedData = transformedResults.map(item => {
+                // Find the corresponding unique item in uniqueArray based on SoNumberId
+                const matchingItem = uniqueArray.find(obj => obj.SoNumberId === item.Id);
+  
+                // Check if a matching item was found
+                if (matchingItem) {
+                  return {
+                    ...item,
+                    status: 1,
+                    OutwardNumber: matchingItem.OutwardNumber,
+                  };
+                } else {
+                  return {
+                    ...item,
+                    status: 0,
+                    OutwardNumber: '', // Set an empty string if no matching item is found
+                  };
+                }
+              });
+  
+              // const filteredData = combinedData.filter(item => item.status === 1);
+              // console.log(combinedData);
+              const hasMore = resulte.length === parseInt(pageSize);
+              res.status(200).json({ data: combinedData, hasMore });
+            }
+          });
+        }
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: error });
+    }
+
+}
 exports.getsoarticledetails = (req, resp) => {
   const { sonumber, party_id, CreatedDate } = req.body;
   // MySQL query
@@ -1598,7 +1712,7 @@ exports.getsoarticledetails = (req, resp) => {
   connection.query(query, [sonumber, party_id, CreatedDate], (error, results) => {
     if (error) {
       console.error(error);
-      return resp.status(500).json({ error: error});
+      return resp.status(500).json({ error: error });
     }
 
     if (results.length === 0) {
@@ -1631,9 +1745,9 @@ exports.udatepartytoken = async (req, resp) => {
 
 exports.getcompleteoutwordDetails = async (req, resp) => {
   console.log("Pending So Detials");
-  const {articlearray,OutwardNumberId,PartyId}=req.body;
-  console.log(articlearray,OutwardNumberId,PartyId);
-  const q1=`SELECT ow.OutwardRate AS ArticleRate , a.ArticleNumber , a.ArticleColor ,a.ArticleSize ,
+  const { articlearray, OutwardNumberId, PartyId } = req.body;
+  console.log(articlearray, OutwardNumberId, PartyId);
+  const q1 = `SELECT ow.OutwardRate AS ArticleRate , a.ArticleNumber , a.ArticleColor ,a.ArticleSize ,
   c.Title,
   ow.NoPacks AS OutwardNoPacks
   FROM article AS a 
@@ -1668,8 +1782,11 @@ exports.getcompleteoutwordDetails = async (req, resp) => {
 
 
 exports.getCompletedSoDetails = async (req, resp) => {
-  const { PartyId } = req.body;
-  console.log("Completed So Detials "+PartyId);
+  const { PartyId, page, pageSize } = req.body;
+    console.log( PartyId, page, pageSize );
+    const offset = (page - 1) * pageSize;
+
+  console.log("Completed So Detials " + PartyId);
   const q1 = `SELECT 
   o.NoPacks , 
   own.Id,
@@ -1691,9 +1808,10 @@ exports.getCompletedSoDetails = async (req, resp) => {
   LEFT JOIN sonumber As sn ON own.SoId = sn.Id
   LEFT JOIN financialyear AS fn ON own.FinancialYearId = fn.Id
   LEFT JOIN users as us ON sn.UserId = us.Id
-  WHERE o.PartyId = ? ORDER BY sn.Id DESC;`
+  WHERE o.PartyId = ? ORDER BY sn.Id DESC
+  LIMIT ? OFFSET ?;`
 
-  connection.query(q1, [PartyId], (error, resulte) => {
+  connection.query(q1, [PartyId, parseInt(pageSize), offset], (error, resulte) => {
     if (error) {
       resp.state(500).json({ error: error })
     }
@@ -1730,7 +1848,80 @@ exports.getCompletedSoDetails = async (req, resp) => {
         }
       });
 
-      resp.status(200).json(filteredData);
+      const hasMore = resulte.length === parseInt(pageSize);
+      resp.status(200).json({data:filteredData,hasMore});
+    }
+  })
+}
+
+exports.filteroutwardnumber = async (req,resp)=>{
+  const { PartyId, page, pageSize ,filterdate } = req.body;
+  const offset = (page - 1) * pageSize;
+
+  console.log("Completed So Detials " + PartyId);
+  const q1 = `SELECT 
+  o.NoPacks , 
+  own.Id,
+  o.ArticleId ,
+  o.OutwardRate , 
+  o.OutwardNumberId , 
+  own.OutwardDate, 
+  own.FinancialYearId , 
+  own.OutwardNumber , 
+  sn.SoNumber , 
+  sn.Transporter , 
+  us.Name AS UserName , 
+  fn.StartYear , 
+  sn.UserId as assign_party,
+  fn.EndYear ,
+  sn.UserId
+  FROM outward AS o 
+  LEFT JOIN outwardnumber AS own ON o.OutwardNumberId = own.Id
+  LEFT JOIN sonumber As sn ON own.SoId = sn.Id
+  LEFT JOIN financialyear AS fn ON own.FinancialYearId = fn.Id
+  LEFT JOIN users as us ON sn.UserId = us.Id
+  WHERE o.PartyId = ? AND own.OutwardDate = ? ORDER BY sn.Id DESC
+  LIMIT ? OFFSET ?;`
+
+  connection.query(q1, [PartyId,filterdate, parseInt(pageSize), offset], (error, resulte) => {
+    if (error) {
+      resp.state(500).json({ error: error })
+    }
+    else {
+      const filteredData = [];
+
+      // Loop through the input data
+      resulte.forEach(item => {
+        const outwardNumberId = item.OutwardNumberId;
+        const existingEntry = filteredData.find(entry => entry.OutwardNumberId === outwardNumberId);
+
+        if (existingEntry) {
+          // Add NoPacks, OutwardRate, and ArticleId as strings to their respective arrays
+          existingEntry.OutwardNoPacks.push(item.NoPacks.toString());
+          existingEntry.ArticleRate.push(item.OutwardRate.toString());
+          existingEntry.outwardArticleId.push(item.ArticleId);
+        } else {
+          // Create a new entry in the filteredData array
+          filteredData.push({
+            OutwardNumberId: outwardNumberId,
+            CreatedDate: item.OutwardDate,
+            FinancialYearId: item.FinancialYearId,
+            OutwardNumber: item.OutwardNumber,
+            SoNumber: item.SoNumber,
+            Transporter: item.Transporter,
+            UserName: item.UserName,
+            StartYear: item.StartYear,
+            EndYear: item.EndYear,
+            OutwardNoPacks: [item.NoPacks.toString()],
+            ArticleRate: [item.OutwardRate.toString()],
+            outwardArticleId: [item.ArticleId],
+            status: 1
+          });
+        }
+      });
+
+      const hasMore = resulte.length === parseInt(pageSize);
+      resp.status(200).json({data:filteredData,hasMore});
     }
   })
 }

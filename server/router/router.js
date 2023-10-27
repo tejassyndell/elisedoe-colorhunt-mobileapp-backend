@@ -28,7 +28,9 @@ const {
   getsoarticledetails,
   udatepartytoken,
   getcompleteoutwordDetails,
-  getCompletedSoDetails,pushnotification
+  getCompletedSoDetails,pushnotification,
+  FilterSoNumber,
+  filteroutwardnumber
 } = require("../controller/controllerM2.js");
 
 Routes.get("/getAllArticles", getAllArticles);
@@ -61,5 +63,6 @@ Routes.post("/udatepartytoken",udatepartytoken);
 Routes.post("/getcompleteoutwordDetails",getcompleteoutwordDetails);
 Routes.post("/getcompletedsodetails",getCompletedSoDetails);
 Routes.post("/pushnotification",pushnotification);
-
+Routes.post("/filtersonumber",FilterSoNumber);
+Routes.post("/filteroutwardnumber",filteroutwardnumber);
 module.exports = Routes;
