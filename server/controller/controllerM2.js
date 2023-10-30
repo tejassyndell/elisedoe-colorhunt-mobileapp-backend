@@ -63,7 +63,7 @@ exports.getAllArticles = async (req, res) => {
   connection.query(query, (error, productData) => {
     if (error) {
       console.log("Error executing query:", err);
-      res.status(210).json("error");
+      res.status(500).json({ error: error });
       return;
     } else {
       const outputArray = productData.map((item) => {
@@ -113,7 +113,7 @@ exports.createAccount = async (req, res) => {
         console.error("Error inserting data:", err);
         res
           .status(500)
-          .json({ error: "Failed to insert data into the database" });
+          .json({ error: err });
       } else {
         console.log("Account data inserted:", result);
         res.status(200).json({ message: "Account created successfully" });
@@ -143,7 +143,7 @@ exports.getCategories = (req, res) => {
       console.error("Error executing query:", error);
       res
         .status(500)
-        .json({ error: "Failed to retrieve data from the database" });
+        .json({ error: error });
     } else {
       res.status(200).json(results);
     }
@@ -159,7 +159,7 @@ exports.getParty = (req, res) => {
       console.error("Error executing query:", error);
       res
         .status(500)
-        .json({ error: "Failed to retrieve data from the database" });
+        .json({ error: error });
     } else {
       res.status(200).json(results);
     }
@@ -174,7 +174,7 @@ exports.AddWishlist = (req, res) => {
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
-      res.status(500).json({ error: "Failed to create data in database" });
+      res.status(500).json({ error: error });
     } else {
       res.status(200).json(results);
     }
@@ -195,7 +195,7 @@ exports.getWishlist = (req, res) => {
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
-      res.status(500).json({ error: "Failed to get data from database table" });
+      res.status(500).json({ error: error });
     } else {
 
       if (status == true) {
@@ -236,7 +236,7 @@ exports.deletewishlist = (req, res) => {
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
-      res.status(500).json({ error: "Failed to get data from database table" });
+      res.status(500).json({ error: error });
     } else {
       res.status(200).json(results);
     }
@@ -744,7 +744,7 @@ exports.addtocart = (req, res) => {
       console.log("Error Executing Query:", error);
       res
         .status(500)
-        .json({ error: "Failed to get data from database table " });
+        .json({ error: error});
     } else {
       res.status(200).json(results);
     }
@@ -764,7 +764,7 @@ exports.findfromthecart = (req, res) => {
       console.log("Error Executing Query:", error);
       res
         .status(500)
-        .json({ error: "Failed to get data from database table " });
+        .json({ error: error });
     } else {
       if (results.length == 0) {
         res.status(200).json({ id: -1 });
@@ -791,7 +791,7 @@ exports.updateCartArticale = (req, res) => {
       console.log("Error Executing Query:", error);
       res
         .status(500)
-        .json({ error: "Failed to get data from database table " });
+        .json({ error: error });
     } else {
       res.status(200).json(results);
     }
@@ -811,7 +811,7 @@ exports.cartdetails = (req, res) => {
       console.log("Error Executing Query:", error);
       res
         .status(500)
-        .json({ error: "Failed to get data from database table " });
+        .json({ error: error });
     } else {
 
       const outputArray = results.map((item) => {
@@ -844,7 +844,7 @@ exports.deletecartitem = (req, res) => {
   connection.query(query, (error, results) => {
     if (error) {
       console.log("Error Executing Query:", error);
-      res.status(500).json({ error: "Failed To delete data from database" });
+      res.status(500).json({ error: error });
     } else {
       res.status(200).json(results);
       console.log("Deleted");
@@ -981,7 +981,7 @@ exports.getCartArticleDetails = async (req, res) => {
     res.json(formattedResult);
   } catch (error) {
     console.error("Error:", error);
-    res.status(500).json({ error: "Failed to get data from database table" });
+    res.status(500).json({ error:error });
   }
 };
 
@@ -993,7 +993,7 @@ exports.getcategorywithphotos = (req, res) => {
       console.error("Error executing query:", error);
       res
         .status(500)
-        .json({ error: "Failed to retrieve data from the database" });
+        .json({ error:error });
     } else {
       res.status(200).json(results);
     }
@@ -1007,7 +1007,7 @@ exports.transportationdropdowns = (req, res) => {
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query", error)
-      res.status(500).json({ error: "Failed to retrive data from database" })
+      res.status(500).json({ error: error })
     } else {
       res.status(200).json(results)
       console.log(results);
@@ -1424,7 +1424,7 @@ exports.UserData = (req, res) => {
     (err, result) => {
       if (err) {
         console.error("Error inserting data:", err);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: err });
       } else {
         console.log("Data inserted successfully");
         res.status(201).json({ message: "Data inserted successfully" });
@@ -1460,7 +1460,7 @@ exports.CollectInwardForCartArticals = async (req, res) => {
     res.status(200).json({ data: arr2 });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'An error occurred' });
+    res.status(500).json({ error: err });
   }
 };
 
@@ -1487,7 +1487,7 @@ exports.getNotification = async (req, res) => {
     res.status(200).json({ message: 'Notification sent successfully' });
   } catch (error) {
     console.error('Error sending notification:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: error });
   }
 }
 
@@ -1496,7 +1496,7 @@ exports.getSoNumber = async (req, res) => {
 
   try {
     const { PartyId, page, pageSize } = req.body;
-    console.log( PartyId, page, pageSize );
+    console.log(PartyId, page, pageSize);
     const offset = (page - 1) * pageSize; // Calculate the offset based on page and page size
 
     const q1 = `
@@ -1508,9 +1508,9 @@ exports.getSoNumber = async (req, res) => {
       WHERE sn.PartyId = ?
       ORDER BY sn.CreatedDate DESC
       LIMIT ? OFFSET ?`;
-      connection.query(q1, [PartyId, parseInt(pageSize), offset], (err, resulte) => {
+    connection.query(q1, [PartyId, parseInt(pageSize), offset], (err, resulte) => {
       if (err) {
-        res.status(500).json(err);
+        res.status(500).json({error:err});
       } else {
         const transformedResults = resulte.reduce((acc, row) => {
           const existingEntry = acc.find(entry => entry.Id === row.Id);
@@ -1540,7 +1540,7 @@ exports.getSoNumber = async (req, res) => {
       `;
         connection.query(q2, [PartyId], (err, response) => {
           if (err) {
-            res.status(500).json(err);
+            res.status(500).json({error:err});
           } else {
 
             // Use a Set to remove duplicates from the response array
@@ -1588,16 +1588,16 @@ exports.getSoNumber = async (req, res) => {
   }
 };
 
-exports.FilterSoNumber = async (req,res)=>{
- 
-    console.log("Filter So Number");
-  
-    try {
-      const { PartyId, page, pageSize ,filterdate } = req.body;
-      console.log( PartyId, page, pageSize,filterdate );
-      const offset = (page - 1) * pageSize; // Calculate the offset based on page and page size
-  
-      const q1 = `
+exports.FilterSoNumber = async (req, res) => {
+
+  console.log("Filter So Number");
+
+  try {
+    const { PartyId, page, pageSize, filterdate } = req.body;
+    console.log(PartyId, page, pageSize, filterdate);
+    const offset = (page - 1) * pageSize; // Calculate the offset based on page and page size
+
+    const q1 = `
         SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.NoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear
         FROM sonumber sn
         LEFT JOIN so so ON sn.id = so.SoNumberId
@@ -1606,84 +1606,84 @@ exports.FilterSoNumber = async (req,res)=>{
         WHERE sn.PartyId = ? AND  sn.SoDate = ?
         ORDER BY sn.CreatedDate DESC
         LIMIT ? OFFSET ?`;
-        connection.query(q1, [PartyId,filterdate, parseInt(pageSize), offset], (err, resulte) => {
-        if (err) {
-          res.status(500).json(err);
-        } else {
-          const transformedResults = resulte.reduce((acc, row) => {
-            const existingEntry = acc.find(entry => entry.Id === row.Id);
-  
-            if (existingEntry) {
-              // Add to existing entry's arrays
-              existingEntry.OutwardNoPacks.push(row.NoPacks);
-              existingEntry.ArticleRate.push(row.ArticleRate);
-            } else {
-              // Create a new entry with arrays
-              acc.push({
-                ...row,
-                OutwardNoPacks: [row.NoPacks],
-                ArticleRate: [row.ArticleRate],
-              });
-            }
-  
-            return acc;
-          }, []);
-          // console.log(transformedResults);
-          const q2 = `
+    connection.query(q1, [PartyId, filterdate, parseInt(pageSize), offset], (err, resulte) => {
+      if (err) {
+        res.status(500).json({error:err});
+      } else {
+        const transformedResults = resulte.reduce((acc, row) => {
+          const existingEntry = acc.find(entry => entry.Id === row.Id);
+
+          if (existingEntry) {
+            // Add to existing entry's arrays
+            existingEntry.OutwardNoPacks.push(row.NoPacks);
+            existingEntry.ArticleRate.push(row.ArticleRate);
+          } else {
+            // Create a new entry with arrays
+            acc.push({
+              ...row,
+              OutwardNoPacks: [row.NoPacks],
+              ArticleRate: [row.ArticleRate],
+            });
+          }
+
+          return acc;
+        }, []);
+        // console.log(transformedResults);
+        const q2 = `
           SELECT so.SoNumberId , onum.OutwardNumber
           FROM outward AS o
           INNER JOIN outwardnumber AS onum ON o.OutwardNumberId = onum.id
           INNER JOIN so AS so ON onum.SoId = so.id
           WHERE o.PartyId = ?
         `;
-          connection.query(q2, [PartyId], (err, response) => {
-            if (err) {
-              res.status(500).json(err);
-            } else {
-  
-              // Use a Set to remove duplicates from the response array
-              const uniqueSoNumberIds = new Set();
-              // Use filter to keep only the first occurrence of each SoNumberId
-              const uniqueArray = response.filter(item => {
-                if (!uniqueSoNumberIds.has(item.SoNumberId)) {
-                  uniqueSoNumberIds.add(item.SoNumberId);
-                  return true;
-                }
-                return false;
-              });
-              // console.log(uniqueArray);
-              const combinedData = transformedResults.map(item => {
-                // Find the corresponding unique item in uniqueArray based on SoNumberId
-                const matchingItem = uniqueArray.find(obj => obj.SoNumberId === item.Id);
-  
-                // Check if a matching item was found
-                if (matchingItem) {
-                  return {
-                    ...item,
-                    status: 1,
-                    OutwardNumber: matchingItem.OutwardNumber,
-                  };
-                } else {
-                  return {
-                    ...item,
-                    status: 0,
-                    OutwardNumber: '', // Set an empty string if no matching item is found
-                  };
-                }
-              });
-  
-              // const filteredData = combinedData.filter(item => item.status === 1);
-              // console.log(combinedData);
-              const hasMore = resulte.length === parseInt(pageSize);
-              res.status(200).json({ data: combinedData, hasMore });
-            }
-          });
-        }
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: error });
-    }
+        connection.query(q2, [PartyId], (err, response) => {
+          if (err) {
+            res.status(500).json({error:err});
+          } else {
+
+            // Use a Set to remove duplicates from the response array
+            const uniqueSoNumberIds = new Set();
+            // Use filter to keep only the first occurrence of each SoNumberId
+            const uniqueArray = response.filter(item => {
+              if (!uniqueSoNumberIds.has(item.SoNumberId)) {
+                uniqueSoNumberIds.add(item.SoNumberId);
+                return true;
+              }
+              return false;
+            });
+            // console.log(uniqueArray);
+            const combinedData = transformedResults.map(item => {
+              // Find the corresponding unique item in uniqueArray based on SoNumberId
+              const matchingItem = uniqueArray.find(obj => obj.SoNumberId === item.Id);
+
+              // Check if a matching item was found
+              if (matchingItem) {
+                return {
+                  ...item,
+                  status: 1,
+                  OutwardNumber: matchingItem.OutwardNumber,
+                };
+              } else {
+                return {
+                  ...item,
+                  status: 0,
+                  OutwardNumber: '', // Set an empty string if no matching item is found
+                };
+              }
+            });
+
+            // const filteredData = combinedData.filter(item => item.status === 1);
+            // console.log(combinedData);
+            const hasMore = resulte.length === parseInt(pageSize);
+            res.status(200).json({ data: combinedData, hasMore });
+          }
+        });
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error });
+  }
 
 }
 exports.getsoarticledetails = (req, resp) => {
@@ -1732,7 +1732,7 @@ exports.udatepartytoken = async (req, resp) => {
   connection.query(updateQuery, [token, party_id], (error, results) => {
     if (error) {
       console.error(error);
-      return resp.status(500).json({ error: 'Internal server error' });
+      return resp.status(500).json({ error: error });
     }
     else {
       console.log(results);
@@ -1783,8 +1783,8 @@ exports.getcompleteoutwordDetails = async (req, resp) => {
 
 exports.getCompletedSoDetails = async (req, resp) => {
   const { PartyId, page, pageSize } = req.body;
-    console.log( PartyId, page, pageSize );
-    const offset = (page - 1) * pageSize;
+  console.log(PartyId, page, pageSize);
+  const offset = (page - 1) * pageSize;
 
   console.log("Completed So Detials " + PartyId);
   const q1 = `SELECT 
@@ -1849,13 +1849,13 @@ exports.getCompletedSoDetails = async (req, resp) => {
       });
 
       const hasMore = resulte.length === parseInt(pageSize);
-      resp.status(200).json({data:filteredData,hasMore});
+      resp.status(200).json({ data: filteredData, hasMore });
     }
   })
 }
 
-exports.filteroutwardnumber = async (req,resp)=>{
-  const { PartyId, page, pageSize ,filterdate } = req.body;
+exports.filteroutwardnumber = async (req, resp) => {
+  const { PartyId, page, pageSize, filterdate } = req.body;
   const offset = (page - 1) * pageSize;
 
   console.log("Completed So Detials " + PartyId);
@@ -1883,7 +1883,7 @@ exports.filteroutwardnumber = async (req,resp)=>{
   WHERE o.PartyId = ? AND own.OutwardDate = ? ORDER BY sn.Id DESC
   LIMIT ? OFFSET ?;`
 
-  connection.query(q1, [PartyId,filterdate, parseInt(pageSize), offset], (error, resulte) => {
+  connection.query(q1, [PartyId, filterdate, parseInt(pageSize), offset], (error, resulte) => {
     if (error) {
       resp.state(500).json({ error: error })
     }
@@ -1921,7 +1921,7 @@ exports.filteroutwardnumber = async (req,resp)=>{
       });
 
       const hasMore = resulte.length === parseInt(pageSize);
-      resp.status(200).json({data:filteredData,hasMore});
+      resp.status(200).json({ data: filteredData, hasMore });
     }
   })
 }
