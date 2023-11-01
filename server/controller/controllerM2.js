@@ -44,7 +44,6 @@ const upload = multer({
 });
 exports.pushnotification = async (req, resp) => {
   const { registrationToken, title, body } = req.body;
-  console.log(registrationToken);
   await admin.messaging().sendMulticast({
     tokens: [
       registrationToken
@@ -137,7 +136,6 @@ function executeQuery(query) {
 //Categories
 exports.getCategories = (req, res) => {
   const query = "SELECT Title AS Category FROM category";
-  console.log("done");
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
@@ -186,7 +184,6 @@ exports.getWishlist = (req, res) => {
   const { party_id, status } = req.body;
   let query;
   if (status == "true") {
-
     query = `SELECT a.Id, a.ArticleNumber, r.ArticleRate, c.Title, COALESCE(p.Name, '[{"photo":"default-art-photo.png"}]') AS Photos  FROM wishlist wl INNER JOIN article a ON wl.article_id = a.Id INNER JOIN articlerate r ON a.Id = r.ArticleId left JOIN articlephotos p ON a.Id = p.ArticlesId INNER JOIN category c ON a.CategoryId = c.Id WHERE wl.party_id = ${party_id} GROUP BY a.Id`;
   } else {
     query = `SELECT article_id as Id FROM wishlist WHERE party_id = ${party_id}`
@@ -247,7 +244,6 @@ exports.deletewishlist = (req, res) => {
 exports.uploadimage = (req, res) => {
   upload.single("image")(req, res, (err) => {
     const filename = `'` + req.file.filename + `'`;
-    console.log(filename);
     if (!filename) {
       res.status(422).json({ status: 422, message: "No image" });
     }
@@ -259,7 +255,6 @@ exports.uploadimage = (req, res) => {
           if (err) {
             console.log(err);
           } else {
-            console.log("Image added");
             res.status(201).json({ status: 201, data: req.body });
           }
         };
@@ -273,7 +268,6 @@ exports.uploadimage = (req, res) => {
 exports.articledetails = async (req, res) => {
   try {
     const { ArticleId, PartyId } = req.query;
-    console.log(ArticleId, PartyId);
     async function calculateArticleData(ArticleId, PartyId) {
       try {
         const articleFlagCheckQuery = `SELECT ArticleOpenFlag FROM article WHERE Id = '${ArticleId}'`;
@@ -400,7 +394,7 @@ exports.articledetails = async (req, res) => {
       return res.status(404).json({ error: "Article not found" });
     }
     else {
-      console.log(photosResult);
+      // console.log(photosResult);
     }
 
     const getphotodata = (item) => {
@@ -744,7 +738,7 @@ exports.addtocart = (req, res) => {
       console.log("Error Executing Query:", error);
       res
         .status(500)
-        .json({ error: error});
+        .json({ error: error });
     } else {
       res.status(200).json(results);
     }
@@ -756,7 +750,6 @@ exports.findfromthecart = (req, res) => {
   const article_id = req.body.article_id;
 
   const values = [[party_id, article_id]];
-  console.log("---------", party_id, article_id);
   const query = `SELECT id FROM cart WHERE party_id = ? AND article_id = ? AND status = 0`;
 
   connection.query(query, [party_id, article_id], (error, results) => {
@@ -783,7 +776,6 @@ exports.updateCartArticale = (req, res) => {
   const Quantity = req.body.Quantity;
   const rate = req.body.rate;
   const serailqty = JSON.stringify(Quantity);
-  console.log(serailqty, rate, id);
   const query = `UPDATE cart SET Quantity = ?, rate = ? WHERE id = ?;`;
 
   connection.query(query, [serailqty, rate, id], (error, results) => {
@@ -847,7 +839,6 @@ exports.deletecartitem = (req, res) => {
       res.status(500).json({ error: error });
     } else {
       res.status(200).json(results);
-      console.log("Deleted");
     }
   });
 };
@@ -981,7 +972,7 @@ exports.getCartArticleDetails = async (req, res) => {
     res.json(formattedResult);
   } catch (error) {
     console.error("Error:", error);
-    res.status(500).json({ error:error });
+    res.status(500).json({ error: error });
   }
 };
 
@@ -993,7 +984,7 @@ exports.getcategorywithphotos = (req, res) => {
       console.error("Error executing query:", error);
       res
         .status(500)
-        .json({ error:error });
+        .json({ error: error });
     } else {
       res.status(200).json(results);
     }
@@ -1010,7 +1001,6 @@ exports.transportationdropdowns = (req, res) => {
       res.status(500).json({ error: error })
     } else {
       res.status(200).json(results)
-      console.log(results);
     }
   })
 }
@@ -1055,7 +1045,6 @@ exports.addso = (req, res) => {
           res.status(500).json({ error: err });
         } else {
           SoNumberId = result.insertId;
-          console.log(SoNumberId, "///////////");
           const userNameQuery = 'SELECT Name FROM users WHERE Id = ?';
           connection.query(userNameQuery, [data.UserId], (err, userNameResult) => {
             if (err) {
@@ -1090,7 +1079,6 @@ exports.addso = (req, res) => {
                         console.error('Error creating UserLog:', err);
                         res.status(500).json({ error: err });
                       } else {
-                        console.log({ message: 'SO created successfully' });
                         data.DataArticle.map(async (item) => {
 
 
@@ -1123,7 +1111,6 @@ exports.addso = (req, res) => {
                                 ArticleRate = 0; // You can set a default value here
                               }
                             }
-                            console.log({ ArticleRate });
 
                             if (item.ArticleOpenFlag === 1) {
                               // ... (previous code, as shown before)
@@ -1133,7 +1120,6 @@ exports.addso = (req, res) => {
                               connection.query('SELECT * FROM mixnopacks WHERE ArticleId = ?', [item.article_id], (err, result) => {
                                 if (err) { console.log(err) }
                                 else {
-                                  console.log(result, "mixnopacks");
                                   mixnopacks = result[0];
                                   NoPacks = item.Quantity;
                                   SalesNoPacks = mixnopacks.NoPacks - item.Quantity;
@@ -1143,7 +1129,6 @@ exports.addso = (req, res) => {
                                       console.log(err);
                                     }
                                     else {
-                                      console.log(result, "NoPacks");
                                       sonumberdata = rsult[0]
                                     }
                                   });
@@ -1186,9 +1171,7 @@ exports.addso = (req, res) => {
                                   console.log(err);
                                 }
                                 else {
-                                  console.log(result[0].SalesNoPacks, "pppppppp");
                                   const search = result[0].SalesNoPacks;
-                                  console.log(search, "0000000");
                                   const searchString = ',';
                                   let stringcomma = 0;
 
@@ -1199,11 +1182,9 @@ exports.addso = (req, res) => {
                                     string.forEach((item, index) => {
                                       const result = parseInt(item) - parseInt(nopk[index]);
                                       arr1.push(result);
-                                      console.log(result, "//////////////////////", index);
                                     });
                                     NoPacks += item.Quantity;
                                     SalesNoPacks = arr1.join(',');
-                                    console.log(SalesNoPacks, "&&&&&&&&&&&&&&");
                                     stringcomma = 1;
                                   }
                                   else {
@@ -1236,7 +1217,6 @@ exports.addso = (req, res) => {
                                   });
 
                                   if (sonumberdata && sonumberdata.total > 0) {
-                                    console.log("{}{}{}_+_+_+");
                                     let nopacksadded = '';
                                     if (SalesNoPacks.includes(',')) {
                                       const NoPacks1 = NoPacks.split(',');
@@ -1379,7 +1359,6 @@ exports.phoneNumberValidation = (req, res) => {
 
   const { number } = req.body;
   //   res.status(200).json(number);
-  console.log(number);
   const query = `SELECT  Id , Name, UserId ,PhoneNumber,Additional_phone_numbers,Address,City,State,Status, PinCode,Country,GSTNumber,GSTType,token from party WHERE PhoneNumber = ? OR Additional_phone_numbers LIKE ?`;
   const numberPattern = `%${number}%`;
   connection.query(query, [number, numberPattern], (error, results) => {
@@ -1426,7 +1405,6 @@ exports.UserData = (req, res) => {
         console.error("Error inserting data:", err);
         res.status(500).json({ error: err });
       } else {
-        console.log("Data inserted successfully");
         res.status(201).json({ message: "Data inserted successfully" });
       }
     }
@@ -1436,7 +1414,6 @@ exports.UserData = (req, res) => {
 exports.CollectInwardForCartArticals = async (req, res) => {
   try {
     const { arr1 } = req.body;
-    console.log(arr1);
     let arr2 = [];
     const q1 = 'SELECT SalesNoPacks , ArticleId FROM inward WHERE ArticleId = ?';
 
@@ -1466,8 +1443,6 @@ exports.CollectInwardForCartArticals = async (req, res) => {
 
 exports.getNotification = async (req, res) => {
   const { registrationToken, title, body } = req.body;
-  console.log(registrationToken, title, body);
-  console.log(registrationToken);
   if (!Expo.isExpoPushToken(registrationToken)) {
     return res.status(400).json({ error: 'Invalid Expo Push Token' });
   }
@@ -1483,34 +1458,53 @@ exports.getNotification = async (req, res) => {
 
   try {
     const response = await expo.sendPushNotificationsAsync([message]);
-    console.log('Notification sent successfully:', response);
     res.status(200).json({ message: 'Notification sent successfully' });
   } catch (error) {
-    console.error('Error sending notification:', error);
     res.status(500).json({ error: error });
   }
 }
 
 exports.getSoNumber = async (req, res) => {
-  console.log("So Number");
 
   try {
     const { PartyId, page, pageSize } = req.body;
-    console.log(PartyId, page, pageSize);
-    const offset = (page - 1) * pageSize; // Calculate the offset based on page and page size
-
+    let offset;
+    offset = (page - 1) * pageSize;
+    console.log(pageSize);
     const q1 = `
-      SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.NoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear
-      FROM sonumber sn
-      LEFT JOIN so so ON sn.id = so.SoNumberId
-      LEFT JOIN users u ON sn.UserId = u.Id
-      LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id
-      WHERE sn.PartyId = ?
-      ORDER BY sn.CreatedDate DESC
-      LIMIT ? OFFSET ?`;
+    SELECT
+    sn.UserId,
+    sn.SoNumber,
+    sn.SoDate,
+    sn.PartyId,
+    sn.Id,
+    sn.CreatedDate,
+    so.NoPacks,
+    so.ArticleRate,
+    sn.Remarks,
+    sn.Transporter,
+    sn.UserId,
+    u.Name AS UserName,
+    fy.StartYear,
+    fy.EndYear
+FROM
+    sonumber sn
+LEFT JOIN so so ON
+    sn.id = so.SoNumberId
+LEFT JOIN users u ON
+    sn.UserId = u.Id
+LEFT JOIN financialyear fy ON
+    sn.FinancialYearId = fy.Id
+WHERE
+    sn.PartyId = ? AND so.NoPacks IS NOT NULL AND so.ArticleRate IS NOT NULL
+ORDER BY
+    sn.CreatedDate
+DESC
+LIMIT ? OFFSET ?;`;
+    console.log(PartyId);
     connection.query(q1, [PartyId, parseInt(pageSize), offset], (err, resulte) => {
       if (err) {
-        res.status(500).json({error:err});
+        res.status(500).json({ error: err });
       } else {
         const transformedResults = resulte.reduce((acc, row) => {
           const existingEntry = acc.find(entry => entry.Id === row.Id);
@@ -1540,7 +1534,7 @@ exports.getSoNumber = async (req, res) => {
       `;
         connection.query(q2, [PartyId], (err, response) => {
           if (err) {
-            res.status(500).json({error:err});
+            res.status(500).json({ error: err });
           } else {
 
             // Use a Set to remove duplicates from the response array
@@ -1590,11 +1584,9 @@ exports.getSoNumber = async (req, res) => {
 
 exports.FilterSoNumber = async (req, res) => {
 
-  console.log("Filter So Number");
 
   try {
     const { PartyId, page, pageSize, filterdate } = req.body;
-    console.log(PartyId, page, pageSize, filterdate);
     const offset = (page - 1) * pageSize; // Calculate the offset based on page and page size
 
     const q1 = `
@@ -1608,7 +1600,7 @@ exports.FilterSoNumber = async (req, res) => {
         LIMIT ? OFFSET ?`;
     connection.query(q1, [PartyId, filterdate, parseInt(pageSize), offset], (err, resulte) => {
       if (err) {
-        res.status(500).json({error:err});
+        res.status(500).json({ error: err });
       } else {
         const transformedResults = resulte.reduce((acc, row) => {
           const existingEntry = acc.find(entry => entry.Id === row.Id);
@@ -1638,7 +1630,7 @@ exports.FilterSoNumber = async (req, res) => {
         `;
         connection.query(q2, [PartyId], (err, response) => {
           if (err) {
-            res.status(500).json({error:err});
+            res.status(500).json({ error: err });
           } else {
 
             // Use a Set to remove duplicates from the response array
@@ -1694,7 +1686,7 @@ exports.getsoarticledetails = (req, resp) => {
       s.Id,
       sn.Id AS SoId,
       sn.ArticleId,
-      sn.OutwardNoPacks,
+      sn.NoPacks,
       sn.ArticleRate,
       a.ArticleColor,
       a.ArticleSize,
@@ -1716,7 +1708,6 @@ exports.getsoarticledetails = (req, resp) => {
     }
 
     if (results.length === 0) {
-      console.log();
       return resp.status(404).json({ error: 'SO not found' });
     }
 
@@ -1735,7 +1726,6 @@ exports.udatepartytoken = async (req, resp) => {
       return resp.status(500).json({ error: error });
     }
     else {
-      console.log(results);
       resp.status(200).json(results);
     }
   });
@@ -1744,12 +1734,10 @@ exports.udatepartytoken = async (req, resp) => {
 
 
 exports.getcompleteoutwordDetails = async (req, resp) => {
-  console.log("Pending So Detials");
   const { articlearray, OutwardNumberId, PartyId } = req.body;
-  console.log(articlearray, OutwardNumberId, PartyId);
   const q1 = `SELECT ow.OutwardRate AS ArticleRate , a.ArticleNumber , a.ArticleColor ,a.ArticleSize ,
   c.Title,
-  ow.NoPacks AS OutwardNoPacks
+  ow.NoPacks
   FROM article AS a 
   LEFT JOIN outward as ow ON a.Id = ow.ArticleId
   LEFT JOIN category as c ON a.CategoryId = c.Id
@@ -1783,10 +1771,8 @@ exports.getcompleteoutwordDetails = async (req, resp) => {
 
 exports.getCompletedSoDetails = async (req, resp) => {
   const { PartyId, page, pageSize } = req.body;
-  console.log(PartyId, page, pageSize);
   const offset = (page - 1) * pageSize;
 
-  console.log("Completed So Detials " + PartyId);
   const q1 = `SELECT 
   o.NoPacks , 
   own.Id,
@@ -1858,7 +1844,6 @@ exports.filteroutwardnumber = async (req, resp) => {
   const { PartyId, page, pageSize, filterdate } = req.body;
   const offset = (page - 1) * pageSize;
 
-  console.log("Completed So Detials " + PartyId);
   const q1 = `SELECT 
   o.NoPacks , 
   own.Id,
