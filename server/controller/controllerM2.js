@@ -375,7 +375,6 @@ exports.articledetails = async (req, res) => {
         }
       } catch (error) {
         console.error("Error:", error);
-        throw error;
       }
     }
 
@@ -409,7 +408,7 @@ exports.articledetails = async (req, res) => {
     // Merge the calculated data into the formatted result
     formattedResult.calculatedData = calculatedData;
 
-    res.json(formattedResult);
+    res.status(200).json(formattedResult);
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: error });
@@ -942,7 +941,6 @@ exports.getCartArticleDetails = async (req, res) => {
         }
       } catch (error) {
         console.error("Error:", error);
-        throw error;
       }
     }
 
@@ -969,7 +967,7 @@ exports.getCartArticleDetails = async (req, res) => {
     // Merge the calculated data into the formatted result
     formattedResult.calculatedData = calculatedData;
 
-    res.json(formattedResult);
+    res.status(200).json(formattedResult);
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: error });
@@ -1045,8 +1043,8 @@ exports.addso = (req, res) => {
           res.status(500).json({ error: err });
         } else {
           SoNumberId = result.insertId;
-          const userNameQuery = 'SELECT Name FROM users WHERE Id = ?';
-          connection.query(userNameQuery, [data.UserId], (err, userNameResult) => {
+          const userNameQuery = 'SELECT Name FROM party WHERE Id = ?';
+          connection.query(userNameQuery, [data.PartyId], (err, userNameResult) => {
             if (err) {
               console.error('Error retrieving user name:', err);
               res.status(500).json({ error: err });
@@ -1073,7 +1071,7 @@ exports.addso = (req, res) => {
 
                   connection.query(
                     logQuery,
-                    ['SO', result.insertId, 'Created', `${userName} created SO with SO Number ${SONumber}`, data.UserId],
+                    ['SO', result.insertId, 'Created by mobile app', `${userName} created SO with SO Number ${SONumber}`, data.UserId],
                     (err) => {
                       if (err) {
                         console.error('Error creating UserLog:', err);
@@ -1366,14 +1364,7 @@ exports.phoneNumberValidation = (req, res) => {
       console.error("Error executing query", error);
       res.status(500).json({ error: error });
     } else {
-      if (results.length > 0) {
-        if (results[0].Status == 0) {
-          res.status(500).json({ error: "Your Account is not verified" });
-        }
-        res.status(200).json(results);
-      } else {
-        res.status(201).json();
-      }
+      res.status(200).json(results);
     }
   });
 };
@@ -1405,7 +1396,7 @@ exports.UserData = (req, res) => {
         console.error("Error inserting data:", err);
         res.status(500).json({ error: err });
       } else {
-        res.status(201).json({ message: "Data inserted successfully" });
+        res.status(200).json({ message: "Data inserted successfully" });
       }
     }
   );
