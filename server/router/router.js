@@ -30,7 +30,8 @@ const {
   getcompleteoutwordDetails,
   getCompletedSoDetails,pushnotification,
   FilterSoNumber,
-  filteroutwardnumber
+  filteroutwardnumber,
+  cartCount
 } = require("../controller/controllerM2.js");
 
 Routes.get("/getAllArticles", getAllArticles);
@@ -65,4 +66,5 @@ Routes.post("/getcompletedsodetails",getCompletedSoDetails);
 Routes.post("/pushnotification",pushnotification);
 Routes.post("/filtersonumber",FilterSoNumber);
 Routes.post("/filteroutwardnumber",filteroutwardnumber);
+Routes.post("/cartcount",cartCount);
 module.exports = Routes;

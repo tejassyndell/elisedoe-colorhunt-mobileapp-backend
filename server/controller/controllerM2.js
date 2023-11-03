@@ -1458,10 +1458,7 @@ exports.getNotification = async (req, res) => {
 exports.getSoNumber = async (req, res) => {
 
   try {
-    const { PartyId, page, pageSize } = req.body;
-    let offset;
-    offset = (page - 1) * pageSize;
-    console.log(pageSize);
+    const { PartyId } = req.body;
     const q1 = `
     SELECT
     sn.UserId,
@@ -1489,11 +1486,9 @@ LEFT JOIN financialyear fy ON
 WHERE
     sn.PartyId = ? AND so.NoPacks IS NOT NULL AND so.ArticleRate IS NOT NULL
 ORDER BY
-    sn.CreatedDate
-DESC
-LIMIT ? OFFSET ?;`;
-    console.log(PartyId);
-    connection.query(q1, [PartyId, parseInt(pageSize), offset], (err, resulte) => {
+    sn.CreatedDate DESC
+`;
+    connection.query(q1, [PartyId], (err, resulte) => {
       if (err) {
         res.status(500).json({ error: err });
       } else {
@@ -1561,8 +1556,7 @@ LIMIT ? OFFSET ?;`;
 
             // const filteredData = combinedData.filter(item => item.status === 1);
             // console.log(combinedData);
-            const hasMore = resulte.length === parseInt(pageSize);
-            res.status(200).json({ data: combinedData, hasMore });
+            res.status(200).json({ data: combinedData });
           }
         });
       }
@@ -1577,19 +1571,13 @@ exports.FilterSoNumber = async (req, res) => {
 
 
   try {
-    const { PartyId, page, pageSize, filterdate } = req.body;
-    const offset = (page - 1) * pageSize; // Calculate the offset based on page and page size
-
+    const { PartyId, fromdate, todate } = req.body;
+    console.log(fromdate, "_________", todate);
     const q1 = `
-        SELECT sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.NoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear
-        FROM sonumber sn
-        LEFT JOIN so so ON sn.id = so.SoNumberId
-        LEFT JOIN users u ON sn.UserId = u.Id
-        LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id
-        WHERE sn.PartyId = ? AND  sn.SoDate = ?
-        ORDER BY sn.CreatedDate DESC
-        LIMIT ? OFFSET ?`;
-    connection.query(q1, [PartyId, filterdate, parseInt(pageSize), offset], (err, resulte) => {
+    SELECT 
+    sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.NoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear
+    FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId LEFT JOIN users u ON sn.UserId = u.Id LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id WHERE sn.PartyId = ? AND so.NoPacks IS NOT NULL AND so.ArticleRate IS NOT NULL AND sn.SoDate >= ? AND sn.SoDate <= ? ORDER BY sn.CreatedDate DESC`;
+    connection.query(q1, [PartyId, fromdate, todate], (err, resulte) => {
       if (err) {
         res.status(500).json({ error: err });
       } else {
@@ -1657,8 +1645,7 @@ exports.FilterSoNumber = async (req, res) => {
 
             // const filteredData = combinedData.filter(item => item.status === 1);
             // console.log(combinedData);
-            const hasMore = resulte.length === parseInt(pageSize);
-            res.status(200).json({ data: combinedData, hasMore });
+            res.status(200).json({ data: combinedData });
           }
         });
       }
@@ -1761,8 +1748,7 @@ exports.getcompleteoutwordDetails = async (req, resp) => {
 
 
 exports.getCompletedSoDetails = async (req, resp) => {
-  const { PartyId, page, pageSize } = req.body;
-  const offset = (page - 1) * pageSize;
+  const { PartyId } = req.body;
 
   const q1 = `SELECT 
   o.NoPacks , 
@@ -1785,10 +1771,9 @@ exports.getCompletedSoDetails = async (req, resp) => {
   LEFT JOIN sonumber As sn ON own.SoId = sn.Id
   LEFT JOIN financialyear AS fn ON own.FinancialYearId = fn.Id
   LEFT JOIN users as us ON sn.UserId = us.Id
-  WHERE o.PartyId = ? ORDER BY sn.Id DESC
-  LIMIT ? OFFSET ?;`
+  WHERE o.PartyId = ? ORDER BY sn.Id DESC;`
 
-  connection.query(q1, [PartyId, parseInt(pageSize), offset], (error, resulte) => {
+  connection.query(q1, [PartyId], (error, resulte) => {
     if (error) {
       resp.state(500).json({ error: error })
     }
@@ -1825,15 +1810,15 @@ exports.getCompletedSoDetails = async (req, resp) => {
         }
       });
 
-      const hasMore = resulte.length === parseInt(pageSize);
-      resp.status(200).json({ data: filteredData, hasMore });
+
+      resp.status(200).json({ data: filteredData });
     }
   })
 }
 
 exports.filteroutwardnumber = async (req, resp) => {
-  const { PartyId, page, pageSize, filterdate } = req.body;
-  const offset = (page - 1) * pageSize;
+  const { PartyId, todate, fromdate } = req.body;
+
 
   const q1 = `SELECT 
   o.NoPacks , 
@@ -1856,10 +1841,9 @@ exports.filteroutwardnumber = async (req, resp) => {
   LEFT JOIN sonumber As sn ON own.SoId = sn.Id
   LEFT JOIN financialyear AS fn ON own.FinancialYearId = fn.Id
   LEFT JOIN users as us ON sn.UserId = us.Id
-  WHERE o.PartyId = ? AND own.OutwardDate = ? ORDER BY sn.Id DESC
-  LIMIT ? OFFSET ?;`
+  WHERE o.PartyId = ? AND own.OutwardDate >= ? AND own.OutwardDate <= ? ORDER BY sn.Id DESC;`
 
-  connection.query(q1, [PartyId, filterdate, parseInt(pageSize), offset], (error, resulte) => {
+  connection.query(q1, [PartyId, fromdate, todate], (error, resulte) => {
     if (error) {
       resp.state(500).json({ error: error })
     }
@@ -1896,8 +1880,24 @@ exports.filteroutwardnumber = async (req, resp) => {
         }
       });
 
-      const hasMore = resulte.length === parseInt(pageSize);
-      resp.status(200).json({ data: filteredData, hasMore });
+      resp.status(200).json({ data: filteredData });
+    }
+  })
+}
+
+
+exports.cartCount =async (req,res)=>{
+  const {PartyId}=req.body;
+
+  const q1 = `SELECT COUNT(status) as total FROM cart WHERE party_id = ? AND status=0`
+
+  connection.query(q1,PartyId,(err,result)=>{
+    if(err)
+    {
+      res.status(500).json({error:err})
+    }
+    else{
+      res.status(200).json(result)
     }
   })
 }
