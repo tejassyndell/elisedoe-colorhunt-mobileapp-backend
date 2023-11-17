@@ -44,16 +44,17 @@ const upload = multer({
 });
 exports.pushnotification = async (req, resp) => {
   const { registrationToken, title, body } = req.body;
-  await admin.messaging().sendMulticast({
-    tokens: [
-      registrationToken
-    ], // ['token_1', 'token_2', ...]
+  console.log(registrationToken);
+const res =   await admin.messaging().sendMulticast({
+    tokens: registrationToken
+    , // ['token_1', 'token_2', ...]
     notification: {
       title: title,
       body: body,
       imageUrl: 'https://my-cdn.com/app-logo.png',
     },
   });
+  resp.status(200).json(res)
 }
 //Full Article data
 exports.getAllArticles = async (req, res) => {
@@ -135,7 +136,7 @@ function executeQuery(query) {
 
 //Categories
 exports.getCategories = (req, res) => {
-  const query = "SELECT Title AS Category FROM category";
+  const query = "SELECT Title AS Category FROM category WHERE Mobileapp_status = 1";
   connection.query(query, (error, results) => {
     if (error) {
       console.error("Error executing query:", error);
@@ -1892,6 +1893,20 @@ exports.cartCount =async (req,res)=>{
   const q1 = `SELECT COUNT(status) as total FROM cart WHERE party_id = ? AND status=0`
 
   connection.query(q1,PartyId,(err,result)=>{
+    if(err)
+    {
+      res.status(500).json({error:err})
+    }
+    else{
+      res.status(200).json(result)
+    }
+  })
+}
+
+exports.sliderimages = async (req,res)=>{
+  const q1 = `SELECT image FROM beaner`
+
+  connection.query(q1,(err,result)=>{
     if(err)
     {
       res.status(500).json({error:err})

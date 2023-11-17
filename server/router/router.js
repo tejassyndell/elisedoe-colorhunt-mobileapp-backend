@@ -31,7 +31,8 @@ const {
   getCompletedSoDetails,pushnotification,
   FilterSoNumber,
   filteroutwardnumber,
-  cartCount
+  cartCount,
+  sliderimages
 } = require("../controller/controllerM2.js");
 
 Routes.get("/getAllArticles", getAllArticles);
@@ -67,4 +68,5 @@ Routes.post("/pushnotification",pushnotification);
 Routes.post("/filtersonumber",FilterSoNumber);
 Routes.post("/filteroutwardnumber",filteroutwardnumber);
 Routes.post("/cartcount",cartCount);
+Routes.get("/sliderimages",sliderimages)
 module.exports = Routes;
