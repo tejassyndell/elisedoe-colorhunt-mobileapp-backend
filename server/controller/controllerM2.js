@@ -45,7 +45,7 @@ const upload = multer({
 exports.pushnotification = async (req, resp) => {
   const { registrationToken, title, body } = req.body;
   console.log(registrationToken);
-const res =   await admin.messaging().sendMulticast({
+  const res = await admin.messaging().sendMulticast({
     tokens: registrationToken
     , // ['token_1', 'token_2', ...]
     notification: {
@@ -86,6 +86,7 @@ exports.getAllArticles = async (req, res) => {
     }
   });
 };
+
 
 
 
@@ -1485,7 +1486,7 @@ LEFT JOIN users u ON
 LEFT JOIN financialyear fy ON
     sn.FinancialYearId = fy.Id
 WHERE
-    sn.PartyId = ? AND so.NoPacks IS NOT NULL AND so.ArticleRate IS NOT NULL
+    sn.PartyId = ? AND so.NoPacks IS NOT NULL AND so.ArticleRate IS NOT NULL AND so.Status = 0
 ORDER BY
     sn.CreatedDate DESC
 `;
@@ -1577,7 +1578,7 @@ exports.FilterSoNumber = async (req, res) => {
     const q1 = `
     SELECT 
     sn.UserId, sn.SoNumber, sn.SoDate, sn.PartyId, sn.Id, sn.CreatedDate, so.NoPacks, so.ArticleRate, sn.Remarks, sn.Transporter, sn.UserId, u.Name AS UserName, fy.StartYear, fy.EndYear
-    FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId LEFT JOIN users u ON sn.UserId = u.Id LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id WHERE sn.PartyId = ? AND so.NoPacks IS NOT NULL AND so.ArticleRate IS NOT NULL AND sn.SoDate >= ? AND sn.SoDate <= ? ORDER BY sn.CreatedDate DESC`;
+    FROM sonumber sn LEFT JOIN so so ON sn.id = so.SoNumberId LEFT JOIN users u ON sn.UserId = u.Id LEFT JOIN financialyear fy ON sn.FinancialYearId = fy.Id WHERE sn.PartyId = ? AND so.NoPacks IS NOT NULL AND so.ArticleRate IS NOT NULL AND sn.SoDate >= ? AND sn.SoDate <= ? AND so.Status = 0 ORDER BY sn.CreatedDate DESC`;
     connection.query(q1, [PartyId, fromdate, todate], (err, resulte) => {
       if (err) {
         res.status(500).json({ error: err });
@@ -1887,32 +1888,67 @@ exports.filteroutwardnumber = async (req, resp) => {
 }
 
 
-exports.cartCount =async (req,res)=>{
-  const {PartyId}=req.body;
+exports.cartCount = async (req, res) => {
+  const { PartyId } = req.body;
 
   const q1 = `SELECT COUNT(status) as total FROM cart WHERE party_id = ? AND status=0`
 
-  connection.query(q1,PartyId,(err,result)=>{
-    if(err)
-    {
-      res.status(500).json({error:err})
+  connection.query(q1, PartyId, (err, result) => {
+    if (err) {
+      res.status(500).json({ error: err })
     }
-    else{
+    else {
       res.status(200).json(result)
     }
   })
 }
 
-exports.sliderimages = async (req,res)=>{
+exports.sliderimages = async (req, res) => {
   const q1 = `SELECT image FROM beaner`
 
-  connection.query(q1,(err,result)=>{
-    if(err)
-    {
-      res.status(500).json({error:err})
+  connection.query(q1, (err, result) => {
+    if (err) {
+      res.status(500).json({ error: err })
     }
-    else{
+    else {
       res.status(200).json(result)
     }
   })
 }
+
+exports.getAllNotification = async (req, res) => {
+  const {partyid}=req.body;
+  const query = "SELECT * FROM `notification` WHERE party_id = ?"; // Enclose the SQL query in quotes
+  
+  connection.query(query, [partyid],(error, results) => {
+    if (error) {
+      console.log("Error executing query:", error); // Correct the variable name to 'error'
+      res.status(500).json({ error: error });
+    } else {
+     
+      res.status(200).json(results); // Return the query results
+    }
+  });
+};
+
+exports.updateNotification = async (req, resp) => {
+  const { id, party_id } = req.body;
+  console.log(req.body, 'iuahiudaiunsdia');
+  const updateQuery = 'UPDATE notification SET status = 1 WHERE party_id = ? AND id = ?';
+
+  connection.query(updateQuery, [party_id, id], (error, results) => {
+    if (error) {
+      console.error(error);
+      return resp.status(500).json({ error: error });
+    }
+
+    // Check the results object to see if the update was successful.
+    if (results.affectedRows > 0) {
+      // Notification status was updated successfully.
+      return resp.status(200).json({ message: 'Notification status updated successfully' });
+    } else {
+      // No rows were updated, which means the notification with the given ID was not found.
+      return resp.status(404).json({ error: 'Notification not found' });
+    }
+  });
+};

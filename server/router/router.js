@@ -32,7 +32,9 @@ const {
   FilterSoNumber,
   filteroutwardnumber,
   cartCount,
-  sliderimages
+  sliderimages,
+  getAllNotification,
+  updateNotification
 } = require("../controller/controllerM2.js");
 
 Routes.get("/getAllArticles", getAllArticles);
@@ -69,4 +71,6 @@ Routes.post("/filtersonumber",FilterSoNumber);
 Routes.post("/filteroutwardnumber",filteroutwardnumber);
 Routes.post("/cartcount",cartCount);
 Routes.get("/sliderimages",sliderimages)
+Routes.post("/getallnotification",getAllNotification);
+Routes.post("/updatenotification",updateNotification);
 module.exports = Routes;
